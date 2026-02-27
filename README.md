@@ -79,6 +79,18 @@ cp deployment/local-blog/.env.example deployment/local-blog/.env
 docker compose --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
 ```
 
+若目前目錄已在 `deployment/local-blog`，可直接使用：
+
+```bash
+docker compose -p blogv2 --env-file .env -f docker-compose.yml up -d --build
+```
+
+同一台 VM 跑多個專案時，建議加 `-p` 指定專案名稱避免資源命名衝突：
+
+```bash
+docker compose -p blogv2 --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
+```
+
 啟動後：
 
 - App: `http://localhost:${NGINX_HTTP_PORT}`
@@ -187,6 +199,18 @@ Docker deploy (based on legacy local-blog layout):
 cp deployment/local-blog/.env.example deployment/local-blog/.env
 # Edit deployment/local-blog/.env, especially PROJECT_PATH
 docker compose --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
+```
+
+If your current directory is already `deployment/local-blog`, you can run:
+
+```bash
+docker compose -p blogv2 --env-file .env -f docker-compose.yml up -d --build
+```
+
+For multi-project VM usage, prefer `-p` to isolate resource naming:
+
+```bash
+docker compose -p blogv2 --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
 ```
 
 After startup:
