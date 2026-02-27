@@ -71,6 +71,19 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+Docker 部署（參考舊版 local-blog 結構）：
+
+```bash
+cp deployment/local-blog/.env.example deployment/local-blog/.env
+# 編輯 deployment/local-blog/.env，至少調整 PROJECT_PATH
+docker compose --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
+```
+
+啟動後：
+
+- App: `http://localhost:${NGINX_HTTP_PORT}`
+- DB: 請使用專案 `.env` 內設定的外部 MySQL 連線
+
 重建資料：
 
 ```bash
@@ -167,6 +180,19 @@ Configure DB in `.env`, then run:
 php artisan migrate --seed
 php artisan serve
 ```
+
+Docker deploy (based on legacy local-blog layout):
+
+```bash
+cp deployment/local-blog/.env.example deployment/local-blog/.env
+# Edit deployment/local-blog/.env, especially PROJECT_PATH
+docker compose --env-file deployment/local-blog/.env -f deployment/local-blog/docker-compose.yml up -d --build
+```
+
+After startup:
+
+- App: `http://localhost:${NGINX_HTTP_PORT}`
+- DB: use external MySQL defined in app `.env`
 
 Reset database:
 
