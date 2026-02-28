@@ -37,7 +37,7 @@
             @forelse($articles as $article)
                 <section class="article-item">
                     <h2>
-                        <a href="{{ route('articles.show', ['id' => $article['id']]) }}">{{ $article['title'] }}</a>
+                        <a href="{{ route('articles.show', ['id' => $article['id'], 'slug' => $article['slug']]) }}">{{ $article['title'] }}</a>
                     </h2>
                     <p>{{ \Illuminate\Support\Str::limit(strip_tags($article['content_html']), 150) }}</p>
                     <div class="meta">
@@ -68,7 +68,7 @@
                 <ul class="side-list">
                     @forelse($recentArticles as $recent)
                         <li>
-                            <a href="{{ route('articles.show', ['id' => $recent['id']]) }}">{{ \Illuminate\Support\Str::limit($recent['title'], 44) }}</a>
+                            <a href="{{ route('articles.show', ['id' => $recent['id'], 'slug' => $recent['slug']]) }}">{{ \Illuminate\Support\Str::limit($recent['title'], 44) }}</a>
                             <small>{{ $recent['created_at']->format('Y-m-d') }}</small>
                         </li>
                     @empty

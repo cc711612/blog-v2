@@ -93,6 +93,7 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
             createdAt: CarbonImmutable::instance($article->created_at),
             authorName: (string) ($article->author?->name ?? 'Unknown'),
             seo: is_array($article->seo) ? $article->seo : [],
+            slug: (string) ($article->getAttribute('slug') ?? ''),
         );
     }
 }

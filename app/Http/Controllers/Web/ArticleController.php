@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Content\Application\Services\ListArticlesService;
 use App\Modules\Content\Application\Services\ShowArticleService;
 use App\Modules\Content\Domain\Entities\ArticleEntity;
+use App\Support\ArticleSlug;
 use App\ViewModels\SeoMetaData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -29,6 +30,7 @@ class ArticleController extends Controller
         $recentArticles = collect($this->listArticles->handle(32, 1, 5)->items())
             ->map(fn (array $article) => [
                 'id' => (int) $article['id'],
+                'slug' => (string) ($article['slug'] ?? ArticleSlug::from(null, (string) $article['title'], (int) $article['id'])),
                 'title' => (string) $article['title'],
                 'created_at' => $article['created_at'],
             ]);
@@ -48,10 +50,16 @@ class ArticleController extends Controller
     /**
      * Render article detail page.
      */
-    public function show(int $id)
+    public function show(int $id, ?string $slug = null)
     {
         $article = $this->showArticle->handle($id);
         abort_if($article === null, 404);
+
+        $canonicalSlug = ArticleSlug::from($article->slug, $article->title, $article->id);
+        if ($slug !== $canonicalSlug) {
+            return redirect()->route('articles.show', ['id' => $article->id, 'slug' => $canonicalSlug], 301);
+        }
+
         $seoMeta = $this->buildShowSeoMeta($article);
 
         return view('articles.show', [
@@ -114,7 +122,10 @@ class ArticleController extends Controller
             title: $title,
             description: $description,
             keywords: $keywords,
-            canonical: route('articles.show', ['id' => $article->id]),
+            canonical: route('articles.show', [
+                'id' => $article->id,
+                'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
+            ]),
             siteName: config('app.name', 'royBlog'),
             ogImage: $ogImage,
             articleAuthor: (string) $article->authorName,

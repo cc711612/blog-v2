@@ -33,7 +33,6 @@ class ContentApiTest extends TestCase
             'content' => '<p>demo content</p>',
             'seo' => ['description' => 'Demo seo'],
             'status' => 1,
-            'published_at' => now(),
         ]);
     }
 
