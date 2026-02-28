@@ -26,6 +26,13 @@
     <link href="{{ url('/images/icons/blog-splash-2048x2732.png') }}" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
     <title>@yield('title', 'Roy-Try-Catch')</title>
     @yield('meta')
+    @if(config('services.google.tag') || config('services.google.analytics_id'))
+        <link rel="preconnect" href="https://www.google-analytics.com">
+        <link rel="preconnect" href="https://www.googletagmanager.com">
+        <link rel="dns-prefetch" href="https://www.google-analytics.com">
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    @endif
+    @include('layouts.tracking_header')
     @stack('head')
     <style>
         :root {
@@ -120,6 +127,7 @@
     @stack('page-styles')
 </head>
 <body>
+@include('layouts.tracking_noscript')
 <div class="container">
     <div class="topbar">
         <a class="brand" href="{{ route('articles.index') }}">Roy-Try-Catch</a>

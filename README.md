@@ -54,6 +54,7 @@ Laravel 12 部落格重構專案。此版本以「SEO 友善 + 舊資料相容 +
 - 留言新增與顯示
 - 動態 sitemap：`/sitemap.xml`
 - PWA：`/manifest.json`、`public/sw.js`
+- 可選追蹤：Google Tag Manager / Google Analytics（透過 env 開關）
 - 舊資料相容（欄位/內容格式）
 
 ### 4) 安裝與啟動
@@ -114,6 +115,11 @@ php artisan test
 - 必須使用 `sqlite`
 
 避免 `RefreshDatabase` 誤傷正式資料庫。
+
+追蹤設定（可選）：
+
+- `GOOGLE_TAG=GTM-XXXXXXX`
+- `GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`
 
 ### 6) 主要路由
 
@@ -176,6 +182,7 @@ Frontend strategy:
 - Comment posting and listing
 - Dynamic sitemap at `/sitemap.xml`
 - PWA support (`/manifest.json`, `public/sw.js`)
+- Optional tracking: Google Tag Manager / Google Analytics via env flags
 - Legacy schema/content compatibility
 
 ### 4) Setup
@@ -236,6 +243,11 @@ Safety guard in `tests/TestCase.php` requires:
 - `sqlite` driver
 
 This prevents destructive test execution on non-test databases.
+
+Optional tracking env vars:
+
+- `GOOGLE_TAG=GTM-XXXXXXX`
+- `GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`
 
 ### 6) Main Routes
 
