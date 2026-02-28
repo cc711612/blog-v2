@@ -33,6 +33,7 @@ class ArticleController extends Controller
 
         return new ArticleResource([
             'id' => $article->id,
+            'slug' => $article->slug,
             'title' => $article->title,
             'content_preview' => \Illuminate\Support\Str::limit(strip_tags($article->contentHtml), 120),
             'author_name' => $article->authorName,

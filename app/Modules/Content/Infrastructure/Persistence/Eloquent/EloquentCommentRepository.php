@@ -62,7 +62,21 @@ class EloquentCommentRepository implements CommentRepositoryInterface
 
         $comment->load('user');
 
-        return $this->toEntity($comment);
+        $entity = $this->toEntity($comment);
+
+        if ($authorName !== '') {
+            return new CommentEntity(
+                id: $entity->id,
+                articleId: $entity->articleId,
+                authorName: $authorName,
+                content: $entity->content,
+                status: $entity->status,
+                createdAt: $entity->createdAt,
+                userId: $entity->userId,
+            );
+        }
+
+        return $entity;
     }
 
     /**

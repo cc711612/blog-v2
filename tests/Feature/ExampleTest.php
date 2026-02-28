@@ -31,7 +31,6 @@ class ExampleTest extends TestCase
             'title' => 'Homepage article',
             'content' => '<p>home</p>',
             'status' => 1,
-            'published_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

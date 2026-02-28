@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
+use App\Support\ArticleSlug;
 use Illuminate\Support\Collection;
 use Illuminate\Http\Response;
 
@@ -50,8 +51,9 @@ class SitemapController extends Controller
         ];
 
         foreach ($items as $article) {
+            $slug = ArticleSlug::from($article->slug, $article->title, $article->id);
             $lines[] = '  <url>';
-            $lines[] = '    <loc>'.$this->xmlEscape($base.'/article/'.$article->id).'</loc>';
+            $lines[] = '    <loc>'.$this->xmlEscape($base.'/article/'.$article->id.'/'.$slug).'</loc>';
             $lines[] = '    <lastmod>'.$this->xmlEscape($article->updatedAt->toIso8601String()).'</lastmod>';
             $lines[] = '    <priority>0.80</priority>';
             $lines[] = '  </url>';

@@ -82,5 +82,5 @@ Route::get('/manifest.json', function (): JsonResponse {
 
 Route::get('/', [ArticleController::class, 'index'])->name('home');
 Route::get('/article', [ArticleController::class, 'index'])->name('articles.index');
-Route::get('/article/{id}', [ArticleController::class, 'show'])->name('articles.show');
+Route::get('/article/{id}/{slug?}', [ArticleController::class, 'show'])->name('articles.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.xml');

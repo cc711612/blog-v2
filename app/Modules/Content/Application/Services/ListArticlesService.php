@@ -4,6 +4,7 @@ namespace App\Modules\Content\Application\Services;
 
 use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
 use App\Modules\Content\Domain\Repositories\CommentRepositoryInterface;
+use App\Support\ArticleSlug;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -32,6 +33,7 @@ class ListArticlesService
         $items = collect($paginator->items())->map(function ($article) {
             return [
                 'id' => $article->id,
+                'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
                 'title' => $article->title,
                 'content_html' => $article->contentHtml,
                 'content_preview' => \Illuminate\Support\Str::limit(strip_tags($article->contentHtml), 120),

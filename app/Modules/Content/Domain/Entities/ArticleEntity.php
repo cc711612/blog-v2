@@ -16,6 +16,7 @@ class ArticleEntity
         public readonly ?CarbonImmutable $createdAt = null,
         public readonly string $authorName = 'Unknown',
         public readonly array $seo = [],
+        public readonly string $slug = '',
     ) {
     }
 }
