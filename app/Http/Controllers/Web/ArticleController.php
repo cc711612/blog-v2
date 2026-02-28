@@ -30,7 +30,7 @@ class ArticleController extends Controller
         $recentArticles = collect($this->listArticles->handle(32, 1, 5)->items())
             ->map(fn (array $article) => [
                 'id' => (int) $article['id'],
-                'slug' => (string) ($article['slug'] ?? ArticleSlug::from(null, (string) $article['title'], (int) $article['id'])),
+                'slug' => $article['slug'],
                 'title' => (string) $article['title'],
                 'created_at' => $article['created_at'],
             ]);
