@@ -33,6 +33,31 @@
             border-radius: 4px;
             padding: 0.1em 0.3em;
         }
+        .article-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.2em 0;
+            font-size: 0.95em;
+        }
+        .article-content table th,
+        .article-content table td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .article-content table thead th {
+            background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+            color: var(--text);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .article-content table tbody tr:nth-child(even) {
+            background: color-mix(in srgb, var(--surface) 60%, transparent);
+        }
+        .article-content table tbody tr:hover {
+            background: color-mix(in srgb, var(--primary) 6%, transparent);
+        }
         .comment-panel { margin-top: 30px; }
         .comment-item { border-top: 1px solid var(--border); padding: 12px 0; }
         .comment-item p { margin: 0 0 6px; }
