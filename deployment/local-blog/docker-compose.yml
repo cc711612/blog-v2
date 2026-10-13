@@ -3,6 +3,8 @@ services:
     build:
       context: ./php
     container_name: ${PROJECT_NAME}-php
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
     restart: always
     environment:
       TZ: ${APP_TIMEZONE}
