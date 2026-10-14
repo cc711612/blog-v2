@@ -60,8 +60,12 @@ services:
     restart: always
     environment:
       TZ: ${APP_TIMEZONE}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -73,6 +77,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  redis-data:
+    name: ${PROJECT_NAME}-redis-data
 
 networks:
   app:
