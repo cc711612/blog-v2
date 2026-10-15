@@ -21,6 +21,38 @@
             width: 100%;
         }
         .article-content pre code { color: inherit; white-space: pre; display: block; }
+        .article-content .code-block {
+            margin: 1.2em 0;
+            border: 1px solid var(--code-border);
+            border-radius: 6px;
+            background: var(--code-bg);
+            overflow: hidden;
+        }
+        .article-content .code-block pre { margin: 0; border: 0; border-radius: 0; }
+        .article-content .code-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 4px 8px 4px 15px;
+            border-bottom: 1px solid var(--code-border);
+            color: var(--code-text);
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-size: 0.75rem;
+        }
+        .article-content .code-lang { opacity: 0.7; text-transform: uppercase; letter-spacing: 0.04em; }
+        .article-content .code-copy {
+            background: transparent;
+            color: var(--code-text);
+            border: 1px solid var(--code-border);
+            border-radius: 4px;
+            padding: 2px 10px;
+            font: inherit;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .article-content .code-copy:hover,
+        .article-content .code-copy:focus-visible { opacity: 1; border-color: var(--primary); }
         .article-content .hljs {
             background: var(--code-bg);
             color: var(--code-text);
@@ -103,6 +135,9 @@
 @push('scripts')
     @livewireScripts
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" defer></script>
+    {{-- common bundle 不含 nginx / dockerfile，文章裡有用到 --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/nginx.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/dockerfile.min.js" defer></script>
     <script>
         (() => {
             const LANG_RULES = [
@@ -233,6 +268,67 @@
 
                     window.hljs.highlightElement(codeEl);
                     codeEl.dataset.highlighted = '1';
+                });
+
+                addCodeToolbars();
+            };
+
+            const LANG_LABELS = {
+                php: 'PHP', javascript: 'JavaScript', typescript: 'TypeScript', bash: 'Bash', shell: 'Shell',
+                sql: 'SQL', json: 'JSON', yaml: 'YAML', nginx: 'Nginx', ini: 'INI', dockerfile: 'Dockerfile',
+                html: 'HTML', xml: 'HTML', css: 'CSS', python: 'Python', plaintext: 'Text',
+            };
+
+            const copyText = async (text) => {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+            };
+
+            const addCodeToolbars = () => {
+                document.querySelectorAll('.article-content pre').forEach((preEl) => {
+                    if (preEl.parentElement && preEl.parentElement.classList.contains('code-block')) {
+                        return;
+                    }
+                    const codeEl = preEl.querySelector('code');
+                    const match = codeEl ? /\blanguage-([\w-]+)/.exec(codeEl.className) : null;
+                    const lang = match ? match[1] : 'plaintext';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'code-block';
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'code-toolbar';
+                    const label = document.createElement('span');
+                    label.className = 'code-lang';
+                    label.textContent = LANG_LABELS[lang] || lang;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'code-copy';
+                    button.textContent = '複製';
+                    button.setAttribute('aria-label', '複製程式碼');
+                    button.addEventListener('click', async () => {
+                        try {
+                            await copyText((codeEl || preEl).textContent || '');
+                            button.textContent = '已複製';
+                        } catch (e) {
+                            button.textContent = '複製失敗';
+                        }
+                        clearTimeout(button._resetTimer);
+                        button._resetTimer = setTimeout(() => { button.textContent = '複製'; }, 2000);
+                    });
+                    toolbar.append(label, button);
+                    preEl.parentNode.insertBefore(wrapper, preEl);
+                    wrapper.append(toolbar, preEl);
                 });
             };
 
