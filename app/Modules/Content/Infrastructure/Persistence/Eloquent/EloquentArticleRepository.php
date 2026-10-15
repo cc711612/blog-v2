@@ -76,6 +76,23 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
     }
 
     /**
+     * @param int $userId
+     * @param int $limit
+     * @return Collection<int, ArticleEntity>
+     */
+    public function latestPublishedByUser(int $userId, int $limit): Collection
+    {
+        return Article::query()
+            ->with('author')
+            ->where('status', 1)
+            ->where('user_id', $userId)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Article $article) => $this->toEntity($article));
+    }
+
+    /**
      * Map Eloquent model into domain entity.
      *
      * @param Article $article

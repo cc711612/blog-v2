@@ -101,4 +101,18 @@ class ArticleInMemoryRepository implements ArticleRepositoryInterface
             ->sortByDesc(fn (ArticleEntity $article) => $article->updatedAt->timestamp)
             ->values();
     }
+
+    /**
+     * @param int $userId
+     * @param int $limit
+     * @return Collection<int, ArticleEntity>
+     */
+    public function latestPublishedByUser(int $userId, int $limit): Collection
+    {
+        return $this->dataset()
+            ->filter(fn (ArticleEntity $article) => $article->status === 1 && $article->userId === $userId)
+            ->sortByDesc(fn (ArticleEntity $article) => $article->id)
+            ->take($limit)
+            ->values();
+    }
 }

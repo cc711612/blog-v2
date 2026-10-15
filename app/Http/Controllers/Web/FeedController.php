@@ -18,7 +18,7 @@ class FeedController extends Controller
     public function index(): Response
     {
         $base = rtrim(config('app.url', 'http://localhost'), '/');
-        $items = $this->articles->allPublishedByUser(32)->take((int) config('seo.feed.limit', 20));
+        $items = $this->articles->latestPublishedByUser(32, (int) config('seo.feed.limit', 20));
 
         return response($this->buildFeedXml($base, $items), 200)
             ->header('Content-Type', 'application/rss+xml; charset=UTF-8');

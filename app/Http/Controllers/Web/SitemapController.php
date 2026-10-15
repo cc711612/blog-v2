@@ -43,11 +43,6 @@ class SitemapController extends Controller
             '    <lastmod>'.$this->xmlEscape($lastmod).'</lastmod>',
             '    <priority>1.00</priority>',
             '  </url>',
-            '  <url>',
-            '    <loc>'.$this->xmlEscape($base.'/article').'</loc>',
-            '    <lastmod>'.$this->xmlEscape($lastmod).'</lastmod>',
-            '    <priority>0.64</priority>',
-            '  </url>',
         ];
 
         foreach ($items as $article) {

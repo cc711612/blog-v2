@@ -204,4 +204,41 @@ class SeoMetaTest extends TestCase
         $this->assertSame($title, (string) $xml->channel->item[0]->title);
         $this->assertSame('a & b <c>', (string) $xml->channel->item[0]->description);
     }
+
+    public function test_home_and_article_index_canonical_point_to_home(): void
+    {
+        $this->insertArticle(1, 'A');
+        $this->get('/')->assertOk()->assertSee('<link rel="canonical" href="'.rtrim(route('home'), '/').'/"', false);
+        $this->get('/article')->assertOk()->assertSee('<link rel="canonical" href="'.rtrim(route('home'), '/').'/"', false);
+        $this->get('/article?page=2')->assertSee('page=2', false);
+    }
+
+    public function test_sitemap_no_longer_lists_article_index(): void
+    {
+        $this->insertArticle(1, 'A');
+        $xml = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $this->assertStringNotContainsString('<loc>'.self::BASE.'/article</loc>', $xml);
+        $this->assertStringContainsString('<loc>'.self::BASE.'/</loc>', $xml);
+    }
+
+    public function test_feed_limits_rows_in_query(): void
+    {
+        for ($i = 1; $i <= 25; $i++) { $this->insertArticle($i, 'T'.$i); }
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $xml = $this->get('/feed.xml')->assertOk()->getContent();
+        $q = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->first(fn ($sql) => str_contains($sql, 'from "articles"'));
+        $this->assertNotNull($q);
+        $limit = (int) config('seo.feed.limit');
+        $this->assertStringContainsString('limit '.$limit, $q);
+        $this->assertSame($limit, substr_count($xml, '<item>'));
+    }
+
+    public function test_custom_og_image_dimensions_are_output_when_provided(): void
+    {
+        $this->insertArticle(9, 'Custom', 1, ['image' => self::BASE.'/images/og/9.jpg', 'image_width' => 1200, 'image_height' => 630]);
+        $this->get('/article/9/post-9')->assertOk()
+            ->assertSee('<meta property="og:image" content="'.self::BASE.'/images/og/9.jpg"', false)
+            ->assertSee('<meta property="og:image:width" content="1200"', false)
+            ->assertSee('<meta property="og:image:height" content="630"', false);
+    }
 }
