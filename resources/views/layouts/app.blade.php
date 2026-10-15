@@ -26,6 +26,7 @@
     <link href="{{ url('/images/icons/blog-splash-2048x2732.png') }}" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
     <title>@yield('title', 'Roy-Try-Catch')</title>
     @yield('meta')
+    <link rel="alternate" type="application/rss+xml" title="{{ config('seo.site_name') }}" href="{{ route('feed.xml') }}">
     @if(config('services.google.tag') || config('services.google.analytics_id'))
         <link rel="preconnect" href="https://www.google-analytics.com">
         <link rel="preconnect" href="https://www.googletagmanager.com">
