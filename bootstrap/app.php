@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // 前面有 Cloudflare → 主機 nginx → 容器 nginx，信任內網 proxy 的 X-Forwarded-*，
         // 讓 url()/route() 產生 https 網址（canonical、og:url、轉址）
         $middleware->trustProxies(at: ['127.0.0.1', '172.16.0.0/12']);
+
+        // 文章頁由 Cloudflare 邊緣快取（匿名訪客共用同一份 HTML），HTML 內的 Livewire CSRF token
+        // 會是第一位訪客的，其他人在留言區搜尋／排序會 419。站上目前沒有任何登入，唯一會寫資料的
+        // CommentPanel::submit 有 Auth::check() 擋著，CSRF 在這裡沒有保護對象；snapshot 防竄改由
+        // APP_KEY checksum 負責。⚠️ 之後若加上登入，必須先移除這個例外並調整 Cloudflare 快取規則。
+        $middleware->validateCsrfTokens(except: ['livewire/update']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
