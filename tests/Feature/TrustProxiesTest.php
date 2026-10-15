@@ -22,8 +22,8 @@ class TrustProxiesTest extends TestCase
             ->withHeaders(['X-Forwarded-Proto' => 'https'])
             ->get('http://localhost/article')
             ->assertOk()
-            ->assertSee('<meta property="og:url" content="https://localhost/article"', false)
-            ->assertSee('<link rel="canonical" href="https://localhost/article"', false);
+            ->assertSee('<meta property="og:url" content="https://localhost/"', false)
+            ->assertSee('<link rel="canonical" href="https://localhost/"', false);
     }
 
     public function test_forwarded_headers_from_untrusted_ip_are_ignored(): void
@@ -32,6 +32,6 @@ class TrustProxiesTest extends TestCase
             ->withHeaders(['X-Forwarded-Proto' => 'https'])
             ->get('http://localhost/article')
             ->assertOk()
-            ->assertSee('<meta property="og:url" content="http://localhost/article"', false);
+            ->assertSee('<meta property="og:url" content="http://localhost/"', false);
     }
 }

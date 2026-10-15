@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden; box-sizing: border-box;
+    font-family: "PingFang TC", "Noto Sans TC", "Heiti TC", sans-serif;
+    background:
+      radial-gradient(circle at 88% 12%, rgba(249, 115, 22, 0.22), transparent 42%),
+      radial-gradient(circle at 8% 96%, rgba(56, 189, 248, 0.14), transparent 45%),
+      linear-gradient(135deg, #0b1120 0%, #111827 55%, #0f172a 100%);
+    color: #e5e7eb; position: relative;
+  }
+  .grid { position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(148,163,184,.06) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(148,163,184,.06) 1px, transparent 1px);
+    background-size: 40px 40px; }
+  .wrap { position: relative; padding: 72px 88px 64px; height: 100%; box-sizing: border-box;
+          display: flex; flex-direction: column; justify-content: space-between; }
+  .top { display: flex; gap: 14px; align-items: center; }
+  .cat { font-size: 30px; font-weight: 700; color: #0b1120; background: #f97316;
+         padding: 8px 22px; border-radius: 12px; }
+  .series { font-size: 26px; color: #fdba74; border: 2px solid rgba(249,115,22,.55);
+            padding: 6px 18px; border-radius: 12px; }
+  h1 { margin: 0; font-weight: 800; line-height: 1.22; color: #f8fafc; letter-spacing: 1px; word-break: keep-all; overflow-wrap: anywhere;
+       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .foot { display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-size: 30px; font-weight: 700; color: #f8fafc; }
+  .brand span { color: #f97316; font-family: "SF Mono", Menlo, monospace; margin-right: 10px; }
+  .url { font-family: "SF Mono", Menlo, monospace; font-size: 26px; color: #94a3b8; }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="wrap">
+    <div class="top"><div class="cat" id="cat"></div><div class="series" id="series" hidden></div></div>
+    <h1 id="title"></h1>
+    <div class="foot">
+      <div class="brand"><span>$</span>Roy 的技術筆記</div>
+      <div class="url">roy.usongrat.tw</div>
+    </div>
+  </div>
+<script>
+  // 由 Playwright 以 window.render({cat, title, series}) 填入
+  window.render = ({ cat, title, series }) => {
+    document.getElementById('cat').textContent = cat || '技術筆記';
+    const s = document.getElementById('series');
+    if (series) { s.textContent = series; s.hidden = false; } else { s.hidden = true; }
+    const h = document.getElementById('title');
+    h.textContent = title;
+    const n = [...title].length;
+    h.style.fontSize = (n <= 18 ? 76 : n <= 28 ? 66 : n <= 40 ? 56 : 48) + 'px';
+  };
+</script>
+</body>
+</html>

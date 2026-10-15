@@ -44,6 +44,11 @@ class FakeArticleRepository implements ArticleRepositoryInterface
     {
         return collect();
     }
+
+    public function latestPublishedByUser(int $userId, int $limit): Collection
+    {
+        return collect();
+    }
 }
 
 class FakeCommentRepository implements CommentRepositoryInterface

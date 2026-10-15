@@ -107,7 +107,8 @@ class ArticleController extends Controller
             title: $title,
             description: $description,
             keywords: $keywords,
-            canonical: route('articles.index', array_filter([
+            // 首頁與 /article 第 1 頁內容相同，canonical 統一指向首頁 /
+            canonical: $isHome ? rtrim(route('home'), '/').'/' : route('articles.index', array_filter([
                 'page' => $isPaged ? $page : null,
                 'search' => $search !== '' ? $search : null,
             ])),
@@ -185,8 +186,9 @@ class ArticleController extends Controller
             articleModifiedTime: $modifiedTime,
             articlePublishedTime: $publishedTime,
             ogImageAlt: $title,
-            ogImageWidth: $hasCustomImage ? null : (int) config('seo.og_image.width'),
-            ogImageHeight: $hasCustomImage ? null : (int) config('seo.og_image.height'),
+            // 自訂圖若在 seo 帶了 image_width/image_height 就輸出，否則省略（尺寸未知）
+            ogImageWidth: $hasCustomImage ? ((int) data_get($article->seo, 'image_width') ?: null) : (int) config('seo.og_image.width'),
+            ogImageHeight: $hasCustomImage ? ((int) data_get($article->seo, 'image_height') ?: null) : (int) config('seo.og_image.height'),
             jsonLd: $jsonLd,
         );
     }

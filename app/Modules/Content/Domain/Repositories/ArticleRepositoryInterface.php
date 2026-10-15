@@ -37,4 +37,13 @@ interface ArticleRepositoryInterface
      * @return Collection<int, ArticleEntity>
      */
     public function allPublishedByUser(int $userId): Collection;
+
+    /**
+     * Return the latest published articles for a specific user, limited in the query.
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return Collection<int, ArticleEntity>
+     */
+    public function latestPublishedByUser(int $userId, int $limit): Collection;
 }
