@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f766e">
+    <meta name="theme-color" content="#111827">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="RoyBlog">
+    <meta name="application-name" content="Roy 筆記">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RoyBlog">
+    <meta name="apple-mobile-web-app-title" content="Roy 筆記">
     <link rel="manifest" href="{{ route('manifest') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url('/images/icons/blog-icon-192x192.png') }}">
-    <link rel="icon" type="image/png" sizes="512x512" href="{{ url('/images/icons/blog-icon-512x512.png') }}">
-    <link rel="apple-touch-icon" href="{{ url('/images/icons/blog-icon-180x180.png') }}">
-    <meta name="msapplication-TileColor" content="#f6f7f9">
-    <meta name="msapplication-TileImage" content="{{ url('/images/icons/blog-icon-144x144.png') }}">
-    <link href="{{ url('/images/icons/blog-splash-640x1136.png') }}" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-750x1334.png') }}" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-1125x2436.png') }}" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-828x1792.png') }}" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-1242x2688.png') }}" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-1536x2048.png') }}" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-1668x2224.png') }}" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-1668x2388.png') }}" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
-    <link href="{{ url('/images/icons/blog-splash-2048x2732.png') }}" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link rel="icon" href="{{ url('/favicon.ico') }}?v=20261015" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('/images/icons/favicon-32x32.png') }}?v=20261015">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url('/images/icons/favicon-16x16.png') }}?v=20261015">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url('/images/icons/blog-icon-192x192.png') }}?v=20261015">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url('/images/icons/blog-icon-512x512.png') }}?v=20261015">
+    <link rel="apple-touch-icon" href="{{ url('/images/icons/blog-icon-180x180.png') }}?v=20261015">
+    <meta name="msapplication-TileColor" content="#111827">
+    <meta name="msapplication-TileImage" content="{{ url('/images/icons/blog-icon-144x144.png') }}?v=20261015">
+    <link href="{{ url('/images/icons/blog-splash-640x1136.png') }}?v=20261015" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-750x1334.png') }}?v=20261015" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-1125x2436.png') }}?v=20261015" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-828x1792.png') }}?v=20261015" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-1242x2688.png') }}?v=20261015" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-1536x2048.png') }}?v=20261015" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-1668x2224.png') }}?v=20261015" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-1668x2388.png') }}?v=20261015" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+    <link href="{{ url('/images/icons/blog-splash-2048x2732.png') }}?v=20261015" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
     <title>@yield('title', 'Roy-Try-Catch')</title>
     @yield('meta')
     <link rel="alternate" type="application/rss+xml" title="{{ config('seo.site_name') }}" href="{{ route('feed.xml') }}">
