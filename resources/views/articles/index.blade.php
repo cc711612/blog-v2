@@ -12,8 +12,15 @@
     <meta property="og:site_name" content="{{ $seoMeta->siteName }}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="zh_TW">
+    <meta name="twitter:image" content="{{ $seoMeta->ogImage }}">
     <meta property="og:image" content="{{ $seoMeta->ogImage }}">
+    @if($seoMeta->ogImageWidth && $seoMeta->ogImageHeight)
+        <meta property="og:image:width" content="{{ $seoMeta->ogImageWidth }}">
+        <meta property="og:image:height" content="{{ $seoMeta->ogImageHeight }}">
+    @endif
+    <meta property="og:image:alt" content="{{ $seoMeta->ogImageAlt ?? $seoMeta->title }}">
     <link rel="canonical" href="{{ $seoMeta->canonical }}">
+    @include('layouts.json_ld', ['blocks' => $seoMeta->jsonLd])
     @if($seoMeta->robots)
         <meta name="robots" content="{{ $seoMeta->robots }}">
     @endif

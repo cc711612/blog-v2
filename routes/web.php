@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\ArticleController;
+use App\Http\Controllers\Web\FeedController;
 use App\Http\Controllers\Web\SitemapController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Route;
@@ -84,3 +85,4 @@ Route::get('/', [ArticleController::class, 'index'])->name('home');
 Route::get('/article', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/article/{id}/{slug?}', [ArticleController::class, 'show'])->whereNumber('id')->name('articles.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.xml');
+Route::get('/feed.xml', [FeedController::class, 'index'])->name('feed.xml');

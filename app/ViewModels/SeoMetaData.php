@@ -17,6 +17,11 @@ class SeoMetaData
      * @param string|null $robots
      * @param string|null $articleAuthor
      * @param string|null $articleModifiedTime
+     * @param string|null $articlePublishedTime
+     * @param string|null $ogImageAlt
+     * @param int|null $ogImageWidth
+     * @param int|null $ogImageHeight
+     * @param array<int, array<string, mixed>> $jsonLd
      */
     public function __construct(
         public readonly string $title,
@@ -28,6 +33,11 @@ class SeoMetaData
         public readonly ?string $robots = null,
         public readonly ?string $articleAuthor = null,
         public readonly ?string $articleModifiedTime = null,
+        public readonly ?string $articlePublishedTime = null,
+        public readonly ?string $ogImageAlt = null,
+        public readonly ?int $ogImageWidth = null,
+        public readonly ?int $ogImageHeight = null,
+        public readonly array $jsonLd = [],
     ) {
     }
 }

@@ -75,17 +75,32 @@ class ArticleController extends Controller
      */
     private function buildIndexSeoMeta(string $search, int $page): SeoMetaData
     {
-        $siteName = config('app.name', 'royBlog');
+        $siteName = (string) config('seo.site_name');
         $keywords = 'blog,部落格,個人文章,個人部落格,工程師,Laravel,laravel,php,後端工程師,backend';
         $isPaged = $page > 1;
+        $isHome = $search === '' && ! $isPaged;
+        $base = $this->siteBase();
 
-        $title = $siteName;
-        $description = '文章列表';
+        $title = (string) config('seo.home_title');
+        $description = (string) config('seo.home_description');
         if ($search !== '') {
-            $title = $siteName.' - 搜尋: '.$search;
+            $title = '搜尋：'.$search.'｜'.$siteName;
             $description = '搜尋結果: '.$search;
         } elseif ($isPaged) {
-            $title = $siteName.' - 第 '.$page.' 頁';
+            $title = '文章列表 第 '.$page.' 頁｜'.$siteName;
+            $description = '文章列表 第 '.$page.' 頁';
+        }
+
+        $jsonLd = [];
+        if ($isHome) {
+            $jsonLd[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'WebSite',
+                'name' => $siteName,
+                'url' => $base.'/',
+                'inLanguage' => (string) config('seo.locale'),
+                'publisher' => $this->authorPerson($base),
+            ];
         }
 
         return new SeoMetaData(
@@ -97,8 +112,12 @@ class ArticleController extends Controller
                 'search' => $search !== '' ? $search : null,
             ])),
             siteName: $siteName,
-            ogImage: url('/favicon.ico'),
+            ogImage: $this->defaultOgImage($base),
             robots: $search !== '' ? 'noindex,follow' : null,
+            ogImageAlt: $title,
+            ogImageWidth: (int) config('seo.og_image.width'),
+            ogImageHeight: (int) config('seo.og_image.height'),
+            jsonLd: $jsonLd,
         );
     }
 
@@ -115,22 +134,83 @@ class ArticleController extends Controller
         $keywords = (string) (data_get($article->seo, 'keyword')
             ?? data_get($article->seo, 'keywords')
             ?? $defaultKeywords);
-        $ogImage = (string) (data_get($article->seo, 'image') ?? url('/favicon.ico'));
+        $base = $this->siteBase();
+        $customImage = data_get($article->seo, 'image');
+        $hasCustomImage = is_string($customImage) && $customImage !== '';
+        $ogImage = $hasCustomImage ? $customImage : $this->defaultOgImage($base);
         $title = (string) $article->title;
+        $siteName = (string) config('seo.site_name');
+        $canonical = route('articles.show', [
+            'id' => $article->id,
+            'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
+        ]);
+        $publishedTime = ($article->createdAt ?? $article->updatedAt)->toIso8601String();
+        $modifiedTime = $article->updatedAt->toIso8601String();
+        $person = $this->authorPerson($base);
+
+        $jsonLd = [
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'BlogPosting',
+                'headline' => $title,
+                'description' => $description,
+                'datePublished' => $publishedTime,
+                'dateModified' => $modifiedTime,
+                'author' => $person,
+                'publisher' => $person,
+                'mainEntityOfPage' => $canonical,
+                'image' => $ogImage,
+                'inLanguage' => (string) config('seo.locale'),
+                'keywords' => $keywords,
+            ],
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => $siteName, 'item' => $base.'/'],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => '文章列表', 'item' => route('articles.index')],
+                    ['@type' => 'ListItem', 'position' => 3, 'name' => $title, 'item' => $canonical],
+                ],
+            ],
+        ];
 
         return new SeoMetaData(
             title: $title,
             description: $description,
             keywords: $keywords,
-            canonical: route('articles.show', [
-                'id' => $article->id,
-                'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
-            ]),
-            siteName: config('app.name', 'royBlog'),
+            canonical: $canonical,
+            siteName: $siteName,
             ogImage: $ogImage,
             articleAuthor: (string) $article->authorName,
-            articleModifiedTime: $article->updatedAt->toIso8601String(),
+            articleModifiedTime: $modifiedTime,
+            articlePublishedTime: $publishedTime,
+            ogImageAlt: $title,
+            ogImageWidth: $hasCustomImage ? null : (int) config('seo.og_image.width'),
+            ogImageHeight: $hasCustomImage ? null : (int) config('seo.og_image.height'),
+            jsonLd: $jsonLd,
         );
+    }
+
+    private function siteBase(): string
+    {
+        return rtrim((string) config('app.url', 'http://localhost'), '/');
+    }
+
+    private function defaultOgImage(string $base): string
+    {
+        return $base.config('seo.og_image.path');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function authorPerson(string $base): array
+    {
+        return [
+            '@type' => 'Person',
+            'name' => (string) config('seo.author_name'),
+            'url' => $base.'/',
+        ];
     }
 
     /**

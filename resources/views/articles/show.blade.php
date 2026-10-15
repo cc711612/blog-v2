@@ -257,10 +257,18 @@
     <meta property="og:site_name" content="{{ $seoMeta->siteName }}">
     <meta property="og:type" content="article">
     <meta property="og:locale" content="zh_TW">
+    <meta name="twitter:image" content="{{ $seoMeta->ogImage }}">
     <meta property="og:image" content="{{ $seoMeta->ogImage }}">
+    @if($seoMeta->ogImageWidth && $seoMeta->ogImageHeight)
+        <meta property="og:image:width" content="{{ $seoMeta->ogImageWidth }}">
+        <meta property="og:image:height" content="{{ $seoMeta->ogImageHeight }}">
+    @endif
+    <meta property="og:image:alt" content="{{ $seoMeta->ogImageAlt ?? $seoMeta->title }}">
     <meta property="article:author" content="{{ $seoMeta->articleAuthor }}">
+    <meta property="article:published_time" content="{{ $seoMeta->articlePublishedTime }}">
     <meta property="article:modified_time" content="{{ $seoMeta->articleModifiedTime }}">
     <link rel="canonical" href="{{ $seoMeta->canonical }}">
+    @include('layouts.json_ld', ['blocks' => $seoMeta->jsonLd])
 @endsection
 
 @section('content')
