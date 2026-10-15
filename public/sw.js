@@ -1,4 +1,4 @@
-const CACHE_NAME = 'roy-blog-v2-cache-v2';
+const CACHE_NAME = 'roy-blog-v2-cache-v3';
 const PRECACHE_URLS = ['/', '/article', '/manifest.json', '/favicon.ico'];
 
 self.addEventListener('install', (event) => {
