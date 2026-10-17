@@ -97,4 +97,15 @@ class ContentApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.comments_count', 2);
     }
+
+    public function test_api_show_content_html_is_sanitized(): void
+    {
+        Article::query()->where('id', 44)->update(['content' => '<p>ok</p><script>alert(1)</script><pre class="x"><code>c</code></pre>']);
+
+        $controller = app(\App\Http\Controllers\Api\ArticleController::class);
+        $payload = $controller->show(44)->resource;
+
+        $this->assertStringNotContainsString('<script', $payload['content_html']);
+        $this->assertStringContainsString('<pre class="x"><code>c</code></pre>', $payload['content_html']);
+    }
 }

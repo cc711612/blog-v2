@@ -64,4 +64,14 @@ class ArticleContentSanitizeTest extends TestCase
         $this->assertStringNotContainsString('style="max-width', $html);
         $this->assertStringNotContainsString('style="color:red"', $html);
     }
+
+    public function test_list_service_content_html_is_sanitized(): void
+    {
+        $this->seedArticle('<p>ok</p><script>alert(1)</script>');
+
+        $items = app(\App\Modules\Content\Application\Services\ListArticlesService::class)->handle(32, 1, 10)->items();
+
+        $this->assertStringNotContainsString('<script', $items[0]['content_html']);
+        $this->assertStringContainsString('<p>ok</p>', $items[0]['content_html']);
+    }
 }
