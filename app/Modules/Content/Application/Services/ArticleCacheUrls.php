@@ -10,6 +10,9 @@ use App\Support\ArticleSlug;
  */
 class ArticleCacheUrls
 {
+    /** 與 Web\ArticleController::index 的每頁筆數一致 */
+    private const PER_PAGE = 10;
+
     /**
      * 與文章列表無關、但會列出文章的共用網址（首頁、列表、sitemap、feed、API）。
      *
@@ -17,13 +20,24 @@ class ArticleCacheUrls
      */
     public function shared(): array
     {
-        return array_map(fn (string $path) => $this->absolute($path), [
-            '/',
-            '/article',
-            '/sitemap.xml',
-            '/feed.xml',
-            '/api/articles',
-        ]);
+        $paths = ['/', '/article', '/sitemap.xml', '/feed.xml', '/api/articles'];
+
+        // 分頁：與 articles/index.blade.php 的 route('articles.index', ['page' => N]) 逐字相同（含 page=1）；
+        // 首頁 /?page=N 也是同一個 controller，Cloudflare 會各自快取。多清一頁（last+1）涵蓋刪除／下架後頁數變少。
+        $last = $this->lastPage();
+        for ($page = 1; $page <= $last + 1; $page++) {
+            $paths[] = "/article?page={$page}";
+            $paths[] = "/?page={$page}";
+        }
+
+        return array_map(fn (string $path) => $this->absolute($path), $paths);
+    }
+
+    private function lastPage(): int
+    {
+        $count = Article::query()->webArticle()->where('status', 1)->count();
+
+        return max(1, (int) ceil($count / self::PER_PAGE));
     }
 
     /**

@@ -56,7 +56,52 @@ class CloudflareAutoPurgeTest extends TestCase
             'https://blog.test/sitemap.xml',
             'https://blog.test/feed.xml',
             'https://blog.test/api/articles',
+            'https://blog.test/article?page=1',
+            'https://blog.test/?page=1',
+            'https://blog.test/article?page=2',
+            'https://blog.test/?page=2',
         ];
+    }
+
+    public function test_pagination_urls_cover_every_page_plus_one_extra(): void
+    {
+        // 與網站實際分頁連結（route('articles.index', ['page' => N])）逐字相同
+        $this->assertSame('/article?page=2', route('articles.index', ['page' => 2], false));
+        Bus::fake();
+        foreach (range(1, 10) as $i) {
+            $this->makeArticle(['id' => $i, 'slug' => "p-{$i}", 'title' => "P {$i}"]);
+        }
+        // 已有 10 篇 → 1 頁；再新增第 11 篇 → 2 頁，清 page=1..3
+        $this->makeArticle(['id' => 11, 'slug' => 'p-11', 'title' => 'P 11']);
+
+        Bus::assertDispatchedAfterResponse(PurgeCloudflareCacheJob::class, function (PurgeCloudflareCacheJob $job) {
+            if (! in_array('https://blog.test/article/11/p-11', $job->urls, true)) {
+                return false;
+            }
+
+            foreach ([1, 2, 3] as $n) {
+                if (! in_array("https://blog.test/article?page={$n}", $job->urls, true)
+                    || ! in_array("https://blog.test/?page={$n}", $job->urls, true)) {
+                    return false;
+                }
+            }
+
+            return ! in_array('https://blog.test/article?page=4', $job->urls, true);
+        });
+    }
+
+    public function test_unpublish_purges_page_that_disappears(): void
+    {
+        foreach (range(1, 11) as $i) {
+            $this->makeArticle(['id' => $i, 'slug' => "p-{$i}", 'title' => "P {$i}"]);
+        }
+        Bus::fake();
+
+        // 11 → 10 篇，頁數 2 → 1，原本的 page=2 必須仍被清
+        Article::query()->find(11)->update(['status' => 0]);
+
+        Bus::assertDispatchedAfterResponse(PurgeCloudflareCacheJob::class, fn (PurgeCloudflareCacheJob $job) => in_array('https://blog.test/article?page=2', $job->urls, true)
+            && in_array('https://blog.test/?page=2', $job->urls, true));
     }
 
     public function test_saving_dispatches_after_response_with_full_url_list(): void
