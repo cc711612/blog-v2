@@ -65,7 +65,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-設定 `.env` 資料庫後執行：
+設定 `.env` 資料庫後執行（`--seed` 僅限本機開發：只補不存在的範例資料、不覆寫既有資料，production 環境會直接拒絕執行）：
 
 ```bash
 php artisan migrate --seed
@@ -97,7 +97,7 @@ docker compose -p blogv2 --env-file deployment/local-blog/.env -f deployment/loc
 - App: `http://localhost:${NGINX_HTTP_PORT}`
 - DB: 請使用專案 `.env` 內設定的外部 MySQL 連線
 
-重建資料：
+重建資料（僅限本機；會清空整個資料庫，切勿對正式 DB 執行）：
 
 ```bash
 php artisan migrate:fresh --seed
@@ -109,7 +109,7 @@ php artisan migrate:fresh --seed
 php artisan test
 ```
 
-`tests/TestCase.php` 有安全防護：
+`tests/CreatesApplication.php` 在 app 建立後、資料庫被觸碰前就做安全檢查：
 
 - 必須是 `APP_ENV=testing`
 - 必須使用 `sqlite`
@@ -193,7 +193,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configure DB in `.env`, then run:
+Configure DB in `.env`, then run (`--seed` is local-dev only: it only inserts missing sample rows, never overwrites, and refuses to run in production):
 
 ```bash
 php artisan migrate --seed
@@ -225,7 +225,7 @@ After startup:
 - App: `http://localhost:${NGINX_HTTP_PORT}`
 - DB: use external MySQL defined in app `.env`
 
-Reset database:
+Reset database (local only; this wipes the whole database, never run it against production):
 
 ```bash
 php artisan migrate:fresh --seed
@@ -237,7 +237,7 @@ php artisan migrate:fresh --seed
 php artisan test
 ```
 
-Safety guard in `tests/TestCase.php` requires:
+Safety guard in `tests/CreatesApplication.php` (runs before any DB access) requires:
 
 - `APP_ENV=testing`
 - `sqlite` driver

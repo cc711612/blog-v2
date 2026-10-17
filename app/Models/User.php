@@ -45,6 +45,7 @@ class User extends Authenticatable
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
+        'api_token',
     ];
 
     /**
@@ -85,7 +86,7 @@ class User extends Authenticatable
             return $decoded;
         }
 
-        $unserialized = @unserialize($value);
+        $unserialized = @unserialize($value, ['allowed_classes' => false]);
 
         return is_array($unserialized) ? $unserialized : [];
     }

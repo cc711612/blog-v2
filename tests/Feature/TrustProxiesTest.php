@@ -34,4 +34,43 @@ class TrustProxiesTest extends TestCase
             ->assertOk()
             ->assertSee('<meta property="og:url" content="http://localhost/"', false);
     }
+
+    public function test_forwarded_host_from_internal_proxy_cannot_poison_canonical(): void
+    {
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '172.21.0.5'])
+            ->withHeaders([
+                'X-Forwarded-Proto' => 'https',
+                'X-Forwarded-Host' => 'evil.example.com',
+                'X-Forwarded-Port' => '8443',
+            ])
+            ->get('http://localhost/article')
+            ->assertOk();
+
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('evil.example.com', $html);
+        $this->assertStringContainsString('<link rel="canonical" href="https://localhost/"', $html);
+        $this->assertStringContainsString('<meta property="og:url" content="https://localhost/"', $html);
+    }
+
+    public function test_forwarded_host_does_not_poison_article_canonical_or_redirect(): void
+    {
+        \Illuminate\Support\Facades\DB::table('users')->insert([
+            'id' => 32, 'name' => 'Roy', 'email' => 'roy@example.com', 'password' => 'x',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('articles')->insert([
+            'id' => 7, 'user_id' => 32, 'title' => 'Hello', 'slug' => 'hello', 'content' => '<p>x</p>', 'status' => 1,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $headers = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'evil.example.com'];
+        $server = ['REMOTE_ADDR' => '172.21.0.5'];
+
+        $page = $this->withServerVariables($server)->withHeaders($headers)->get('http://localhost/article/7/hello')->assertOk();
+        $this->assertStringNotContainsString('evil.example.com', $page->getContent());
+
+        $redirect = $this->withServerVariables($server)->withHeaders($headers)->get('http://localhost/article/7/wrong-slug');
+        $redirect->assertStatus(301);
+        $this->assertStringNotContainsString('evil.example.com', (string) $redirect->headers->get('Location'));
+    }
 }

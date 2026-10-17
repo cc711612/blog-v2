@@ -7,6 +7,9 @@
 
 @push('page-styles')
     <style>
+        /* sanitize 會移除 inline style，圖片與圖說樣式改由這裡提供 */
+        .article-content img { max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .article-content .article-caption { text-align: center; color: #6b7280; font-size: 14px; margin-top: -6px; }
         .article-content pre {
             box-sizing: border-box;
             background: var(--code-bg);
@@ -373,7 +376,7 @@
     <p class="meta">{{ $article->authorName }} • Updated {{ $article->updatedAt->format('Y-m-d H:i:s') }}</p>
 
     <article class="article-content">
-        {!! $article->contentHtml !!}
+        {!! $safeContentHtml !!}
     </article>
 
     <livewire:comment-panel :article-id="$article->id" />

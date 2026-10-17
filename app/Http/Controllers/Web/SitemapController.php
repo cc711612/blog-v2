@@ -33,7 +33,8 @@ class SitemapController extends Controller
      */
     private function buildSitemapXml(string $base, Collection $items): string
     {
-        $lastmod = optional($items->first())->updatedAt?->toIso8601String() ?? now()->toIso8601String();
+        // 取所有文章中最新的 updated_at（不是 id 最大那篇），改舊文時首頁 lastmod 才會更新
+        $lastmod = $items->max(fn ($article) => $article->updatedAt)?->toIso8601String() ?? now()->toIso8601String();
 
         $lines = [
             '<?xml version="1.0" encoding="UTF-8"?>',
