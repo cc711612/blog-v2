@@ -33,7 +33,7 @@ class FeedController extends Controller
      */
     private function buildFeedXml(string $base, Collection $items): string
     {
-        $lastBuild = optional($items->first())->updatedAt ?? now();
+        $lastBuild = $items->max(fn ($article) => $article->updatedAt) ?? now();
 
         $lines = [
             '<?xml version="1.0" encoding="UTF-8"?>',
