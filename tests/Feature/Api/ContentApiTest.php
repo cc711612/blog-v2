@@ -83,4 +83,29 @@ class ContentApiTest extends TestCase
             ->assertJsonPath('data.author_name', 'Tester')
             ->assertJsonPath('data.content', 'Looks good');
     }
+
+    public function test_article_show_api_returns_real_published_comments_count(): void
+    {
+        foreach ([[1, 1], [2, 1], [3, 0]] as [$id, $status]) {
+            DB::table('comments')->insert([
+                'id' => $id, 'article_id' => 44, 'user_id' => 32, 'content' => 'comment '.$id,
+                'status' => $status, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        $this->getJson('/api/articles/44')
+            ->assertOk()
+            ->assertJsonPath('data.comments_count', 2);
+    }
+
+    public function test_api_show_content_html_is_sanitized(): void
+    {
+        Article::query()->where('id', 44)->update(['content' => '<p>ok</p><script>alert(1)</script><pre class="x"><code>c</code></pre>']);
+
+        $controller = app(\App\Http\Controllers\Api\ArticleController::class);
+        $payload = $controller->show(44)->resource;
+
+        $this->assertStringNotContainsString('<script', $payload['content_html']);
+        $this->assertStringContainsString('<pre class="x"><code>c</code></pre>', $payload['content_html']);
+    }
 }

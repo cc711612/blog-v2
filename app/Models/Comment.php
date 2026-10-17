@@ -98,7 +98,7 @@ class Comment extends Model
             return $decoded;
         }
 
-        $unserialized = @unserialize($value);
+        $unserialized = @unserialize($value, ['allowed_classes' => false]);
 
         return is_array($unserialized) ? $unserialized : [];
     }

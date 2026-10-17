@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Modules\Content\Application\Services\ListArticlesService;
 use App\Modules\Content\Application\Services\ShowArticleService;
 use App\Modules\Content\Domain\Entities\ArticleEntity;
+use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
+use App\Support\ArticleHtmlSanitizer;
 use App\Support\ArticleSlug;
 use App\ViewModels\SeoMetaData;
 use Illuminate\Http\Request;
@@ -16,8 +18,8 @@ class ArticleController extends Controller
     public function __construct(
         private readonly ListArticlesService $listArticles,
         private readonly ShowArticleService $showArticle,
-    ) {
-    }
+        private readonly ArticleRepositoryInterface $articles,
+    ) {}
 
     /**
      * Render article listing page.
@@ -27,12 +29,15 @@ class ArticleController extends Controller
         $page = max(1, (int) $request->integer('page', 1));
         $search = Str::limit(trim((string) $request->query('search', '')), 100, '');
         $articles = $this->listArticles->handle(32, $page, 10, $search);
-        $recentArticles = collect($this->listArticles->handle(32, 1, 5)->items())
-            ->map(fn (array $article) => [
-                'id' => (int) $article['id'],
-                'slug' => $article['slug'],
-                'title' => (string) $article['title'],
-                'created_at' => $article['created_at'],
+        // 超出最後一頁不能回 200 空列表（soft 404）
+        abort_if($page > 1 && $articles->isEmpty(), 404);
+        // 側欄只要 5 個標題，直接取最新 5 篇，不必跑完整列表 service（省 5 次 COUNT 與一次分頁查詢）
+        $recentArticles = $this->articles->latestPublishedByUser(32, 5)
+            ->map(fn (ArticleEntity $article) => [
+                'id' => $article->id,
+                'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
+                'title' => $article->title,
+                'created_at' => $article->createdAt ?? $article->updatedAt,
             ]);
 
         $popularKeywords = $this->buildPopularKeywords();
@@ -60,18 +65,19 @@ class ArticleController extends Controller
             return redirect()->route('articles.show', ['id' => $article->id, 'slug' => $canonicalSlug], 301);
         }
 
-        $seoMeta = $this->buildShowSeoMeta($article);
+        // 內文輸出前先白名單 sanitize（ADR-001）；SEO 描述也由乾淨的 HTML 產生，避免 script 內容洩進 meta
+        $safeContentHtml = ArticleHtmlSanitizer::clean($article->contentHtml);
+        $seoMeta = $this->buildShowSeoMeta($article, $safeContentHtml);
 
         return view('articles.show', [
             'article' => $article,
+            'safeContentHtml' => $safeContentHtml,
             'seoMeta' => $seoMeta,
         ]);
     }
 
     /**
      * Build SEO metadata for listing page.
-     *
-     * @return SeoMetaData
      */
     private function buildIndexSeoMeta(string $search, int $page): SeoMetaData
     {
@@ -124,17 +130,15 @@ class ArticleController extends Controller
 
     /**
      * Build SEO metadata for article detail page.
-     *
-     * @return SeoMetaData
      */
-    private function buildShowSeoMeta(ArticleEntity $article): SeoMetaData
+    private function buildShowSeoMeta(ArticleEntity $article, string $safeContentHtml): SeoMetaData
     {
         $defaultKeywords = 'blog,部落格,個人文章,個人部落格,工程師,Laravel,laravel,php,後端工程師,backend';
-        $fallbackDescription = Str::limit(strip_tags((string) $article->contentHtml), 150);
-        $description = (string) (data_get($article->seo, 'description') ?? $fallbackDescription);
+        $fallbackDescription = Str::limit(strip_tags($safeContentHtml), 150);
+        $description = (string) (data_get($article->seo, 'description') ?: $fallbackDescription);
         $keywords = (string) (data_get($article->seo, 'keyword')
-            ?? data_get($article->seo, 'keywords')
-            ?? $defaultKeywords);
+            ?: data_get($article->seo, 'keywords')
+            ?: $defaultKeywords);
         $base = $this->siteBase();
         $customImage = data_get($article->seo, 'image');
         $hasCustomImage = is_string($customImage) && $customImage !== '';

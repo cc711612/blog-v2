@@ -6,30 +6,38 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * 本機開發用的範例資料。只「補不存在的資料」，絕不覆寫既有 row（尤其是 user 32 的密碼與 token），
+     * 且禁止在 production 執行。
+     */
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new \RuntimeException('DatabaseSeeder is for local development only; refusing to run in production.');
+        }
+
         $now = now();
         $userColumns = array_flip(Schema::getColumnListing('users'));
         $commentColumns = array_flip(Schema::getColumnListing('comments'));
         $socialColumns = array_flip(Schema::getColumnListing('socials'));
 
-        DB::table('users')->updateOrInsert(
-            ['id' => 32],
+        // insertOrIgnore：user 32 已存在就完全不動；新建時用隨機密碼與 token，不留可猜的預設憑證
+        DB::table('users')->insertOrIgnore(
             array_intersect_key([
+                'id' => 32,
                 'name' => 'Roy',
                 'email' => 'roy@example.com',
-                'password' => Hash::make('password'),
-                'api_token' => 'legacy-token-32',
+                'password' => Hash::make(Str::random(40)),
+                'api_token' => Str::random(60),
                 'introduction' => 'Legacy account used for migration and sitemap baseline.',
                 'created_at' => $now,
                 'updated_at' => $now,
             ], $userColumns)
         );
-
-        $this->call(ImportUser32ArticlesSeeder::class);
 
         $articleIds = DB::table('articles')
             ->where('user_id', 32)
@@ -62,17 +70,19 @@ class DatabaseSeeder extends Seeder
                 ], $commentColumns),
             ];
 
-            $commentUpdateColumns = array_values(array_filter(
-                ['article_id', 'guest_name', 'content', 'status', 'updated_at'],
-                fn (string $column) => isset($commentColumns[$column])
-            ));
-
-            DB::table('comments')->upsert($commentRows, ['id'], $commentUpdateColumns);
+            // 只補不存在的 id，不覆寫既有留言
+            DB::table('comments')->insertOrIgnore($commentRows);
         }
 
-        DB::table('socials')->updateOrInsert(
-            ['social_type' => 3, 'social_type_value' => 'google-roy-32'],
-            array_intersect_key([
+        $socialExists = DB::table('socials')
+            ->where('social_type', 3)
+            ->where('social_type_value', 'google-roy-32')
+            ->exists();
+
+        if (! $socialExists) {
+            DB::table('socials')->insert(array_intersect_key([
+                'social_type' => 3,
+                'social_type_value' => 'google-roy-32',
                 'name' => 'Roy',
                 'email' => 'roy@example.com',
                 'image' => null,
@@ -80,8 +90,8 @@ class DatabaseSeeder extends Seeder
                 'token' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ], $socialColumns)
-        );
+            ], $socialColumns));
+        }
 
         $socialId = DB::table('socials')
             ->where('social_type', 3)
