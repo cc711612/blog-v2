@@ -83,4 +83,18 @@ class ContentApiTest extends TestCase
             ->assertJsonPath('data.author_name', 'Tester')
             ->assertJsonPath('data.content', 'Looks good');
     }
+
+    public function test_article_show_api_returns_real_published_comments_count(): void
+    {
+        foreach ([[1, 1], [2, 1], [3, 0]] as [$id, $status]) {
+            DB::table('comments')->insert([
+                'id' => $id, 'article_id' => 44, 'user_id' => 32, 'content' => 'comment '.$id,
+                'status' => $status, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        $this->getJson('/api/articles/44')
+            ->assertOk()
+            ->assertJsonPath('data.comments_count', 2);
+    }
 }

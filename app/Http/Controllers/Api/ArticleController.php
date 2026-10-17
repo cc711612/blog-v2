@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ArticleResource;
 use App\Modules\Content\Application\Services\ListArticlesService;
 use App\Modules\Content\Application\Services\ShowArticleService;
+use App\Modules\Content\Domain\Repositories\CommentRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -14,6 +15,7 @@ class ArticleController extends Controller
     public function __construct(
         private readonly ListArticlesService $listArticles,
         private readonly ShowArticleService $showArticle,
+        private readonly CommentRepositoryInterface $comments,
     ) {
     }
 
@@ -41,7 +43,7 @@ class ArticleController extends Controller
             'content_html' => $article->contentHtml,
             'seo' => $article->seo,
             'updated_at' => $article->updatedAt,
-            'comments_count' => 0,
+            'comments_count' => $this->comments->countPublishedByArticle($article->id),
         ]);
     }
 }
