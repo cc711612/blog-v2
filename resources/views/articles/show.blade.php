@@ -373,7 +373,7 @@
     <p class="meta">{{ $article->authorName }} • Updated {{ $article->updatedAt->format('Y-m-d H:i:s') }}</p>
 
     <article class="article-content">
-        {!! $article->contentHtml !!}
+        {!! $safeContentHtml !!}
     </article>
 
     <livewire:comment-panel :article-id="$article->id" />
