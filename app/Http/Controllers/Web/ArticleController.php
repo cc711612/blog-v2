@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Content\Application\Services\ListArticlesService;
 use App\Modules\Content\Application\Services\ShowArticleService;
 use App\Modules\Content\Domain\Entities\ArticleEntity;
+use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
 use App\Support\ArticleHtmlSanitizer;
 use App\Support\ArticleSlug;
 use App\ViewModels\SeoMetaData;
@@ -17,6 +18,7 @@ class ArticleController extends Controller
     public function __construct(
         private readonly ListArticlesService $listArticles,
         private readonly ShowArticleService $showArticle,
+        private readonly ArticleRepositoryInterface $articles,
     ) {}
 
     /**
@@ -29,12 +31,13 @@ class ArticleController extends Controller
         $articles = $this->listArticles->handle(32, $page, 10, $search);
         // 超出最後一頁不能回 200 空列表（soft 404）
         abort_if($page > 1 && $articles->isEmpty(), 404);
-        $recentArticles = collect($this->listArticles->handle(32, 1, 5)->items())
-            ->map(fn (array $article) => [
-                'id' => (int) $article['id'],
-                'slug' => $article['slug'],
-                'title' => (string) $article['title'],
-                'created_at' => $article['created_at'],
+        // 側欄只要 5 個標題，直接取最新 5 篇，不必跑完整列表 service（省 5 次 COUNT 與一次分頁查詢）
+        $recentArticles = $this->articles->latestPublishedByUser(32, 5)
+            ->map(fn (ArticleEntity $article) => [
+                'id' => $article->id,
+                'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
+                'title' => $article->title,
+                'created_at' => $article->createdAt ?? $article->updatedAt,
             ]);
 
         $popularKeywords = $this->buildPopularKeywords();
