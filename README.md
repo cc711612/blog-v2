@@ -260,8 +260,8 @@ Optional tracking env vars:
 
 ## Cloudflare 快取自動清除
 
-文章新增／修改／刪除／還原時，會在 DB commit 且回應送出後，呼叫 Cloudflare `purge_cache` 清除相關 URL（文章頁含舊 slug、首頁、`/article`、`/sitemap.xml`、`/feed.xml`、`/api/articles`、`/api/articles/{id}`）。
+文章新增／修改／刪除／還原時，會在 DB commit 且回應送出後，呼叫 Cloudflare `purge_cache` 清除相關 URL（文章頁含舊 slug 與 `/article/{id}`、首頁、`/article`、分頁 `/article?page=N` 與 `/?page=N`、`/sitemap.xml`、`/feed.xml`、`/api/articles`、`/api/articles/{id}`）。
 
 - 設定：`CLOUDFLARE_PURGE_ENABLED`（預設 false）、`CLOUDFLARE_ZONE_ID`、`CLOUDFLARE_API_TOKEN`（只給 Zone → Cache Purge 權限、只限此 zone）。
 - 手動補清（例如直接用 `DB::table` 改過文章）：`php artisan cloudflare:purge-article 89 90` 或 `php artisan cloudflare:purge-article --all-articles`。
-- 失敗只寫 warning log，不影響存檔。分頁（`/article?page=2`）不在清除範圍，靠 Cloudflare TTL 過期。
+- 失敗只寫 warning log，不影響存檔。搜尋頁（`/article?search=…`）不在清除範圍，靠 Cloudflare TTL 過期。
