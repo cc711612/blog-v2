@@ -14,11 +14,16 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  */
 class ArticleHtmlSanitizer
 {
+    private const LEGACY_CAPTION_OPEN_TAG = '<p style="text-align:center;color:#6b7280;font-size:14px;margin-top:-6px;">';
+
     private static ?HtmlSanitizer $sanitizer = null;
 
     public static function clean(?string $html): string
     {
-        return self::sanitizer()->sanitize((string) $html);
+        // 舊文章的圖說是 inline style（style 不開白名單），先把這個已知的固定字串換成 class，樣式由 CSS 提供
+        $html = str_replace(self::LEGACY_CAPTION_OPEN_TAG, '<p class="article-caption">', (string) $html);
+
+        return self::sanitizer()->sanitize($html);
     }
 
     private static function sanitizer(): HtmlSanitizer
