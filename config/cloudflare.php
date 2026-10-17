@@ -30,4 +30,20 @@ return [
         '2a06:98c0::/29',
         '2c0f:f248::/32',
     ],
+
+    /*
+    | 文章更新後自動清除 Cloudflare 邊緣快取（POST /zones/{zone_id}/purge_cache，body {"files":[...]}）。
+    | 預設關閉；token 只給 Zone → Cache Purge 權限、只限此 zone。
+    | batch_size：官方文件 Free/Pro/Business 單次最多 100 個 URL（Enterprise 500），超過會分批送。
+    | 文件：https://developers.cloudflare.com/cache/how-to/purge-cache/
+    */
+    'purge' => [
+        'enabled' => (bool) env('CLOUDFLARE_PURGE_ENABLED', false),
+        'zone_id' => env('CLOUDFLARE_ZONE_ID'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+        'endpoint' => 'https://api.cloudflare.com/client/v4',
+        'batch_size' => 100,
+        'timeout' => 5,
+        'retries' => 2,
+    ],
 ];
