@@ -29,7 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 文章頁由 Cloudflare 邊緣快取（匿名訪客共用同一份 HTML），HTML 內的 Livewire CSRF token
         // 會是第一位訪客的，其他人在留言區搜尋／排序會 419。站上目前沒有任何登入，唯一會寫資料的
         // CommentPanel::submit 有 Auth::check() 擋著，CSRF 在這裡沒有保護對象；snapshot 防竄改由
-        // APP_KEY checksum 負責。⚠️ 之後若加上登入，必須先移除這個例外並調整 Cloudflare 快取規則。
+        // APP_KEY checksum 負責。⚠️ 之後若加上登入，必須先移除這個例外並調整 Cloudflare 快取規則
+        // （tests/Feature/LivewireCsrfExceptionTest.php 有護欄：出現登入路由而例外還在，測試會失敗）。
         $middleware->validateCsrfTokens(except: ['livewire/update']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
