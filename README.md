@@ -109,7 +109,7 @@ php artisan migrate:fresh --seed
 php artisan test
 ```
 
-`tests/TestCase.php` 有安全防護：
+`tests/CreatesApplication.php` 在 app 建立後、資料庫被觸碰前就做安全檢查：
 
 - 必須是 `APP_ENV=testing`
 - 必須使用 `sqlite`
@@ -237,7 +237,7 @@ php artisan migrate:fresh --seed
 php artisan test
 ```
 
-Safety guard in `tests/TestCase.php` requires:
+Safety guard in `tests/CreatesApplication.php` (runs before any DB access) requires:
 
 - `APP_ENV=testing`
 - `sqlite` driver
