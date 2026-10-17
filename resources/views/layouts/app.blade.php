@@ -38,6 +38,17 @@
     @endif
     @include('layouts.tracking_header')
     @stack('head')
+    {{-- 在任何 CSS 之前先套用主題，避免深色模式使用者每次載入先閃一下淺色（FOUC）；按鈕綁定仍在 body 底部 --}}
+    <script>
+        (() => {
+            try {
+                const saved = localStorage.getItem('theme') || 'system';
+                document.documentElement.dataset.theme = saved === 'system'
+                    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                    : saved;
+            } catch (e) {}
+        })();
+    </script>
     <style>
         :root {
             --bg: #f6f7f9;
@@ -180,7 +191,9 @@
             apply(next);
             btn.textContent = `Theme: ${next}`;
         });
-        btn.textContent = `Theme: ${saved}`;
+        if (btn) {
+            btn.textContent = `Theme: ${saved}`;
+        }
     })();
 </script>
 <script>
