@@ -27,6 +27,8 @@ class ArticleController extends Controller
         $page = max(1, (int) $request->integer('page', 1));
         $search = Str::limit(trim((string) $request->query('search', '')), 100, '');
         $articles = $this->listArticles->handle(32, $page, 10, $search);
+        // 超出最後一頁不能回 200 空列表（soft 404）
+        abort_if($page > 1 && $articles->isEmpty(), 404);
         $recentArticles = collect($this->listArticles->handle(32, 1, 5)->items())
             ->map(fn (array $article) => [
                 'id' => (int) $article['id'],

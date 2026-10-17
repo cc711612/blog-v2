@@ -74,6 +74,10 @@ class SeoMetaTest extends TestCase
         $this->assertStringContainsString('<title>搜尋：docker｜Roy 的技術筆記</title>', $search);
         $this->assertSame([], $this->jsonLdBlocks($search));
 
+        // 第 2 頁要真的存在（超出最後一頁會回 404），需要超過 10 篇
+        foreach (range(1, 11) as $id) {
+            $this->insertArticle($id, 'Paged '.$id);
+        }
         $paged = $this->get('/?page=2')->assertOk()->getContent();
         $this->assertStringContainsString('<title>文章列表 第 2 頁｜Roy 的技術筆記</title>', $paged);
         $this->assertStringNotContainsString('Laravel、PHP 與 DevOps 實戰', $paged);
@@ -207,7 +211,9 @@ class SeoMetaTest extends TestCase
 
     public function test_home_and_article_index_canonical_point_to_home(): void
     {
-        $this->insertArticle(1, 'A');
+        foreach (range(1, 11) as $id) {
+            $this->insertArticle($id, 'A'.$id);
+        }
         $this->get('/')->assertOk()->assertSee('<link rel="canonical" href="'.rtrim(route('home'), '/').'/"', false);
         $this->get('/article')->assertOk()->assertSee('<link rel="canonical" href="'.rtrim(route('home'), '/').'/"', false);
         $this->get('/article?page=2')->assertSee('page=2', false);
