@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Article;
 use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
+use App\Observers\ArticleObserver;
 use App\Modules\Content\Domain\Repositories\CommentRepositoryInterface;
 use App\Modules\Content\Infrastructure\Persistence\Eloquent\EloquentArticleRepository;
 use App\Modules\Content\Infrastructure\Persistence\Eloquent\EloquentCommentRepository;
@@ -29,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 文章異動 → 清 Cloudflare 快取（預設關閉，見 config/cloudflare.php）
+        Article::observe(ArticleObserver::class);
+
         // Livewire 更新端點（/livewire/update）已排除 CSRF，補上每 IP 限流。
         // 留言搜尋是 debounce 300ms、輸入留言用 wire:model.live，一般使用者遠低於此上限。
         RateLimiter::for('livewire', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
