@@ -4,6 +4,7 @@ namespace App\Modules\Content\Application\Services;
 
 use App\Modules\Content\Domain\Repositories\ArticleRepositoryInterface;
 use App\Modules\Content\Domain\Repositories\CommentRepositoryInterface;
+use App\Support\ArticleHtmlSanitizer;
 use App\Support\ArticleSlug;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -35,7 +36,7 @@ class ListArticlesService
                 'id' => $article->id,
                 'slug' => ArticleSlug::from($article->slug, $article->title, $article->id),
                 'title' => $article->title,
-                'content_html' => $article->contentHtml,
+                'content_html' => ArticleHtmlSanitizer::clean($article->contentHtml),
                 'content_preview' => \Illuminate\Support\Str::limit(strip_tags($article->contentHtml), 120),
                 'author_name' => $article->authorName,
                 'created_at' => $article->createdAt ?? $article->updatedAt,
