@@ -130,10 +130,10 @@ class ArticleController extends Controller
     {
         $defaultKeywords = 'blog,部落格,個人文章,個人部落格,工程師,Laravel,laravel,php,後端工程師,backend';
         $fallbackDescription = Str::limit(strip_tags($safeContentHtml), 150);
-        $description = (string) (data_get($article->seo, 'description') ?? $fallbackDescription);
+        $description = (string) (data_get($article->seo, 'description') ?: $fallbackDescription);
         $keywords = (string) (data_get($article->seo, 'keyword')
-            ?? data_get($article->seo, 'keywords')
-            ?? $defaultKeywords);
+            ?: data_get($article->seo, 'keywords')
+            ?: $defaultKeywords);
         $base = $this->siteBase();
         $customImage = data_get($article->seo, 'image');
         $hasCustomImage = is_string($customImage) && $customImage !== '';
