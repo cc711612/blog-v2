@@ -17,9 +17,6 @@ class EloquentCommentRepository implements CommentRepositoryInterface
     private static ?bool $hasGuestName = null;
 
     /**
-     * @param int $articleId
-     * @param string $search
-     * @param string $sort
      * @return Collection<int, CommentEntity>
      */
     public function listByArticle(int $articleId, string $search = '', string $sort = 'latest'): Collection
@@ -38,13 +35,6 @@ class EloquentCommentRepository implements CommentRepositoryInterface
         return $query->get()->map(fn (Comment $comment) => $this->toEntity($comment));
     }
 
-    /**
-     * @param int $articleId
-     * @param string $authorName
-     * @param string $content
-     * @param int|null $userId
-     * @return CommentEntity
-     */
     public function add(int $articleId, string $authorName, string $content, ?int $userId = null): CommentEntity
     {
         $payload = [
@@ -79,10 +69,6 @@ class EloquentCommentRepository implements CommentRepositoryInterface
         return $entity;
     }
 
-    /**
-     * @param int $articleId
-     * @return int
-     */
     public function countPublishedByArticle(int $articleId): int
     {
         return Comment::query()
@@ -93,9 +79,6 @@ class EloquentCommentRepository implements CommentRepositoryInterface
 
     /**
      * Map Eloquent model into domain entity.
-     *
-     * @param Comment $comment
-     * @return CommentEntity
      */
     private function toEntity(Comment $comment): CommentEntity
     {
@@ -107,15 +90,13 @@ class EloquentCommentRepository implements CommentRepositoryInterface
             authorName: (string) ($guestName ?? $comment->user?->name ?? 'Guest'),
             content: (string) $comment->content,
             status: (int) $comment->status,
-            createdAt: CarbonImmutable::instance($comment->created_at),
+            createdAt: CarbonImmutable::instance($comment->created_at ?? $comment->updated_at ?? now()),
             userId: $comment->user_id === null ? null : (int) $comment->user_id,
         );
     }
 
     /**
      * Check schema compatibility for legacy guest_name column.
-     *
-     * @return bool
      */
     private function hasGuestName(): bool
     {
