@@ -41,4 +41,28 @@ class SeoFallbackTest extends TestCase
         $this->assertMatchesRegularExpression('#<meta name="description" content="[^"]*這是第 1 篇內文摘要#u', $html);
         $this->assertMatchesRegularExpression('#<meta name="keywords" content="blog,#', $html);
     }
+
+    public function test_sitemap_home_lastmod_uses_newest_updated_at_not_highest_id(): void
+    {
+        // id 較小的文章 updated_at 反而較新（改舊文）
+        $this->insertArticle(1, null, '2026-01-01 00:00:00', '2026-09-09 09:09:09');
+        $this->insertArticle(2, null, '2026-02-01 00:00:00', '2026-03-03 03:03:03');
+
+        $xml = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '#<loc>https://roy\.example\.com/</loc>\s*<lastmod>2026-09-09T09:09:09[^<]*</lastmod>#',
+            $xml
+        );
+    }
+
+    public function test_feed_last_build_date_uses_newest_updated_at_not_highest_id(): void
+    {
+        $this->insertArticle(1, null, '2026-01-01 00:00:00', '2026-09-09 09:09:09');
+        $this->insertArticle(2, null, '2026-02-01 00:00:00', '2026-03-03 03:03:03');
+
+        $xml = $this->get('/feed.xml')->assertOk()->getContent();
+
+        $this->assertStringContainsString('<lastBuildDate>Wed, 09 Sep 2026 09:09:09 +0000</lastBuildDate>', $xml);
+    }
 }
