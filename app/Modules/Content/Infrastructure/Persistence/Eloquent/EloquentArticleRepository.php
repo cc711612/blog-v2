@@ -14,13 +14,6 @@ use Illuminate\Support\Collection;
  */
 class EloquentArticleRepository implements ArticleRepositoryInterface
 {
-    /**
-     * @param int $userId
-     * @param int $page
-     * @param int $perPage
-     * @param string $search
-     * @return LengthAwarePaginator
-     */
     public function paginatePublishedByUser(int $userId, int $page, int $perPage, string $search = ''): LengthAwarePaginator
     {
         $query = Article::query()
@@ -45,10 +38,6 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
         return $paginator;
     }
 
-    /**
-     * @param int $id
-     * @return ArticleEntity|null
-     */
     public function findPublishedById(int $id): ?ArticleEntity
     {
         $article = Article::query()
@@ -61,7 +50,6 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
     }
 
     /**
-     * @param int $userId
      * @return Collection<int, ArticleEntity>
      */
     public function allPublishedByUser(int $userId): Collection
@@ -76,8 +64,6 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
     }
 
     /**
-     * @param int $userId
-     * @param int $limit
      * @return Collection<int, ArticleEntity>
      */
     public function latestPublishedByUser(int $userId, int $limit): Collection
@@ -94,9 +80,6 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
 
     /**
      * Map Eloquent model into domain entity.
-     *
-     * @param Article $article
-     * @return ArticleEntity
      */
     private function toEntity(Article $article): ArticleEntity
     {
@@ -106,8 +89,9 @@ class EloquentArticleRepository implements ArticleRepositoryInterface
             title: (string) $article->title,
             contentHtml: (string) $article->content,
             status: (int) $article->status,
-            updatedAt: CarbonImmutable::instance($article->updated_at),
-            createdAt: CarbonImmutable::instance($article->created_at),
+            // 舊資料的 timestamp 欄位可為 NULL：updatedAt 依序退回 created_at、現在時間，不能因此讓頁面 500
+            updatedAt: CarbonImmutable::instance($article->updated_at ?? $article->created_at ?? now()),
+            createdAt: $article->created_at ? CarbonImmutable::instance($article->created_at) : null,
             authorName: (string) ($article->author?->name ?? 'Unknown'),
             seo: is_array($article->seo) ? $article->seo : [],
             slug: (string) ($article->getAttribute('slug') ?? ''),
