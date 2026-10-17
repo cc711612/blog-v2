@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Content\Application\Services\ListArticlesService;
 use App\Modules\Content\Application\Services\ShowArticleService;
 use App\Modules\Content\Domain\Entities\ArticleEntity;
+use App\Support\ArticleHtmlSanitizer;
 use App\Support\ArticleSlug;
 use App\ViewModels\SeoMetaData;
 use Illuminate\Http\Request;
@@ -16,8 +17,7 @@ class ArticleController extends Controller
     public function __construct(
         private readonly ListArticlesService $listArticles,
         private readonly ShowArticleService $showArticle,
-    ) {
-    }
+    ) {}
 
     /**
      * Render article listing page.
@@ -60,18 +60,19 @@ class ArticleController extends Controller
             return redirect()->route('articles.show', ['id' => $article->id, 'slug' => $canonicalSlug], 301);
         }
 
-        $seoMeta = $this->buildShowSeoMeta($article);
+        // 內文輸出前先白名單 sanitize（ADR-001）；SEO 描述也由乾淨的 HTML 產生，避免 script 內容洩進 meta
+        $safeContentHtml = ArticleHtmlSanitizer::clean($article->contentHtml);
+        $seoMeta = $this->buildShowSeoMeta($article, $safeContentHtml);
 
         return view('articles.show', [
             'article' => $article,
+            'safeContentHtml' => $safeContentHtml,
             'seoMeta' => $seoMeta,
         ]);
     }
 
     /**
      * Build SEO metadata for listing page.
-     *
-     * @return SeoMetaData
      */
     private function buildIndexSeoMeta(string $search, int $page): SeoMetaData
     {
@@ -124,13 +125,11 @@ class ArticleController extends Controller
 
     /**
      * Build SEO metadata for article detail page.
-     *
-     * @return SeoMetaData
      */
-    private function buildShowSeoMeta(ArticleEntity $article): SeoMetaData
+    private function buildShowSeoMeta(ArticleEntity $article, string $safeContentHtml): SeoMetaData
     {
         $defaultKeywords = 'blog,部落格,個人文章,個人部落格,工程師,Laravel,laravel,php,後端工程師,backend';
-        $fallbackDescription = Str::limit(strip_tags((string) $article->contentHtml), 150);
+        $fallbackDescription = Str::limit(strip_tags($safeContentHtml), 150);
         $description = (string) (data_get($article->seo, 'description') ?? $fallbackDescription);
         $keywords = (string) (data_get($article->seo, 'keyword')
             ?? data_get($article->seo, 'keywords')

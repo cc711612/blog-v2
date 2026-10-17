@@ -22,6 +22,7 @@
 - 決策：保留 HTML 儲存，但採白名單 sanitize
 - 原因：既有內容已大量 HTML，轉 markdown 成本高
 - 代價：需維護 sanitizer 規則
+- 實作：`App\Support\ArticleHtmlSanitizer`（`symfony/html-sanitizer`），文章內頁輸出前套用；保留 pre/code/table/img 與 class、id，移除 script/style/iframe/form、事件屬性與 javascript: URL。需要嵌入 iframe（影片等）時須在該類別明確加白名單
 
 ## ADR-002：分頁策略
 
