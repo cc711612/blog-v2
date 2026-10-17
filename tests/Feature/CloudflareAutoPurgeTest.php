@@ -112,6 +112,7 @@ class CloudflareAutoPurgeTest extends TestCase
 
         Bus::assertDispatchedAfterResponse(PurgeCloudflareCacheJob::class, function (PurgeCloudflareCacheJob $job) {
             $expected = [
+                'https://blog.test/article/89',
                 'https://blog.test/article/89/hello-world',
                 'https://blog.test/api/articles/89',
                 ...$this->expectedShared(),

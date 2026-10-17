@@ -48,7 +48,8 @@ class ArticleCacheUrls
     public function forArticle(Article $article, ?string $previousSlug = null, ?string $previousTitle = null): array
     {
         $id = (int) $article->id;
-        $urls = [$this->articleUrl($id, ArticleSlug::from($article->slug, (string) $article->title, $id))];
+        // 不帶 slug 的 /article/{id} 會 301 到 canonical，Cloudflare 也會快取這個轉址
+        $urls = [$this->absolute("/article/{$id}"), $this->articleUrl($id, ArticleSlug::from($article->slug, (string) $article->title, $id))];
 
         if ($previousSlug !== null || $previousTitle !== null) {
             $urls[] = $this->articleUrl($id, ArticleSlug::from($previousSlug, (string) ($previousTitle ?? $article->title), $id));
