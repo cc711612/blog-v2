@@ -62,7 +62,10 @@ services:
     environment:
       TZ: ${APP_TIMEZONE}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    # 不可用 sh -c 包一層：官方 entrypoint 只有在第一個參數是 redis-server 時
+    # 才會 chown /data 並降權成 redis 使用者，用 sh 開頭會讓 redis 以 root 執行。
+    # 密碼改由 compose 變數替換帶入（空字串＝不設密碼，行為同舊版）。
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-}"]
     volumes:
       - redis-data:/data
     healthcheck:
