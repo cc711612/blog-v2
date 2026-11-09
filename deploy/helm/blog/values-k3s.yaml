@@ -83,6 +83,13 @@ dbTLS:
     yYs+BVIYBJQTPA==
     -----END CERTIFICATE-----
 
+# 單節點 k3s、流量小：只跑 1 個 pod（2026-11-09）。部署仍是 RollingUpdate maxSurge 1／maxUnavailable 0，
+# 新 pod Ready 後才停舊的，部署不中斷；pod 自身故障時會有短暫空窗。
+# PDB 關閉：minAvailable 1 搭配 1 副本會讓 kubectl drain／節點維護卡住。
+replicaCount: 1
+pdb:
+  enabled: false
+
 ingress:
   enabled: true
   # 正式網域 roy.usongrat.tw（2026-11-09 切換）；k3s-blog.usongrat.tw 保留當 Access 保護的測試入口
