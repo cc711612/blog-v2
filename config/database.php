@@ -58,9 +58,12 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // MYSQL_ATTR_SSL_VERIFY_SERVER_CERT：只在有設定時帶入（"false" = 加密但不驗證伺服器憑證）。
+            // mysqlnd 的憑證驗證會同時檢查 CA 與主機名稱（無法只驗 CA），用 IP 連沒有 IP SAN 的憑證時必須關閉，見 deploy/helm/blog values 的 dbTLS。
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT : \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) => env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'),
+            ], fn ($v) => $v !== null && $v !== '') : [],
         ],
 
         'mariadb' => [

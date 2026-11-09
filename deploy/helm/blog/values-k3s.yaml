@@ -1,0 +1,99 @@
+# k3s 環境值（不含祕密）。使用方式（正式由 k3s 主機的 deploy-k3s 執行）：
+#   helm upgrade --install blog deploy/helm/blog -n blog -f deploy/helm/blog/values-k3s.yaml --set image.tag=<完整 commit SHA>
+image:
+  php:
+    repository: ghcr.io/cc711612/blog-v2-php
+  nginx:
+    repository: ghcr.io/cc711612/blog-v2-nginx
+
+imagePullSecrets:
+  - name: ghcr-pull
+
+secret:
+  existingSecret: blog-env
+
+# 與 usongrat prod .env 相同的非祕密值（2026-11-09 讀取）；k3s 專屬差異：LOG_CHANNEL=stderr、DB_USERNAME=blog、
+# DB_HOST/REDIS_HOST 由 template 決定、TZ（原本是 compose 的 APP_TIMEZONE）。
+env:
+  APP_NAME: Roy
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://roy.usongrat.tw
+  APP_LOCALE: en
+  APP_FALLBACK_LOCALE: en
+  APP_FAKER_LOCALE: en_US
+  APP_MAINTENANCE_DRIVER: file
+  BCRYPT_ROUNDS: "12"
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: debug
+  DB_CONNECTION: mysql
+  DB_PORT: "3306"
+  DB_DATABASE: blog
+  DB_USERNAME: blog
+  SESSION_DRIVER: redis
+  SESSION_LIFETIME: "120"
+  SESSION_ENCRYPT: "false"
+  SESSION_PATH: /
+  SESSION_DOMAIN: "null"
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: database
+  REDIS_CLIENT: phpredis
+  REDIS_PORT: "6379"
+  BROADCAST_CONNECTION: log
+  FILESYSTEM_DISK: local
+  MAIL_MAILER: log
+  MAIL_FROM_ADDRESS: hello@example.com
+  MAIL_FROM_NAME: Roy
+  GOOGLE_TAG: GTM-M3QLQXN
+  CLOUDFLARE_PURGE_ENABLED: "true"
+  TZ: Asia/Taipei
+
+db:
+  host: 10.0.0.66
+
+# usongrat shared-mysql（auto-generated 憑證，CN=MySQL_Server_8.0.46_Auto_Generated_Server_Certificate、無 SAN）。
+# CA sha256 04:B9:58:A0:…:91:48，效期到 2036-06-29。PHP 無法只驗 CA（見 values.yaml 的 dbTLS 說明），
+# 所以暫時只加密不驗證；MySQL 改發含 IP SAN 10.0.0.66 的憑證後，把 verifyServerCert 改成 true。
+dbTLS:
+  enabled: true
+  verifyServerCert: false
+  caCert: |
+    -----BEGIN CERTIFICATE-----
+    MIIDBjCCAe6gAwIBAgIBATANBgkqhkiG9w0BAQsFADA8MTowOAYDVQQDDDFNeVNR
+    TF9TZXJ2ZXJfOC4wLjQ2X0F1dG9fR2VuZXJhdGVkX0NBX0NlcnRpZmljYXRlMB4X
+    DTI2MDcwMjA2NTMxNFoXDTM2MDYyOTA2NTMxNFowPDE6MDgGA1UEAwwxTXlTUUxf
+    U2VydmVyXzguMC40Nl9BdXRvX0dlbmVyYXRlZF9DQV9DZXJ0aWZpY2F0ZTCCASIw
+    DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKr6bMXhtqO5+VF9Zfu6atS4jFRp
+    5cmAHhh70itgpVYKqjQD4TuiBSsjLlmsdIaHPdeygWH86iAqc4CZE0KEsJK8Yp3o
+    nvH0DxQcBAGBLhobg3wv2RuXuKjv3uYMf0otyulziaQ61kMYWJI5SNXX9jHVZxam
+    LNGTgEphT1brwQw12qZ4dpKIB13y2TkQVsc9MgHcLF92kJqbnwt7gss8iG5MpKFH
+    6g0Kf5E5/0V4ySDdh+kkIjqx5sYzz/nWzYOmiAv/vzS1KMT+64s+RBNBRQJQyikW
+    Dw771iHYmsd1fANm0emW+Xp90U0Pz79uHMs5PQ9IF+79i6JGjdC1Oj0e4ecCAwEA
+    AaMTMBEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAkXtcwNYM
+    lmDabCeXnJlafcLeK+w8b+/kp3vcazOwxs5fWAVw2Ujvb62nl1PhClgTruzFq7+O
+    BpZzr1tKRhPRPx0Id42dM2HeyyG9dtx4hPeaVul4YPwHZV0tCXkP21QAjspHlSg1
+    akRicvjv1lw5YgDSySKwjuSZ3AR/RA3lNexBznWSRTepNbkff2uf0axMoPwDfUAe
+    6+wH+/vcVYnDi+X0TojBl3nu6JAMaq0Jh2eAEeQuDXygrJNbmVe369iFr+8X7ECZ
+    3SiV9S8gCxHmcZNVz3muazzjhwLthrxMa6xESpo/k3GPWpScFwF+g1ke5QTH2DWS
+    yYs+BVIYBJQTPA==
+    -----END CERTIFICATE-----
+
+ingress:
+  enabled: true
+  # 階段 B（影子驗證）只開 k3s-blog.usongrat.tw；切換 roy.usongrat.tw 前再加入（見 phase2 搬遷步驟 15）
+  hosts:
+    - k3s-blog.usongrat.tw
+  entryPoints:
+    - web
+
+networkPolicy:
+  enabled: true
+  dbCIDR: 10.0.0.66/32
+  dbPort: 3306
+  ingressFrom:
+    traefik:
+      namespace: kube-system
+      podLabels:
+        app.kubernetes.io/name: traefik
+    monitoring:
+      namespace: monitoring

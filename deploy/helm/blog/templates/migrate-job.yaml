@@ -1,0 +1,54 @@
+{{- if .Values.migrate.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "blog.fullname" . }}-migrate
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrate.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "blog.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      # 新 Pod 啟動後的前幾秒，節點的轉送規則可能尚未就緒，第一次連 DB 會失敗（no route to host）。
+      # 用 OnFailure 在同一個 Pod 內重啟容器；若改用 Never，backoff 每次都換新 Pod，會一直失敗。
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "blog.image" (dict "root" . "component" "php") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # 不帶 --seed（正式環境不跑 seeder）
+          command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
+          securityContext:
+            {{- include "blog.containerSecurityContext" (dict "root" . "user" .Values.runAs.php.user "group" .Values.runAs.php.group) | nindent 12 }}
+          envFrom:
+            {{- include "blog.envFrom" (dict "root" . "configMapName" (printf "%s-migrate" (include "blog.fullname" .))) | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources.php | nindent 12 }}
+          volumeMounts:
+            {{- include "blog.phpWritableMounts" . | nindent 12 }}
+            {{- if .Values.dbTLS.enabled }}
+            {{- include "blog.dbTLSVolumeMount" . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- include "blog.phpWritableVolumes" . | nindent 8 }}
+        {{- if .Values.dbTLS.enabled }}
+        {{- include "blog.dbTLSVolume" (dict "root" . "suffix" "-migrate") | nindent 8 }}
+        {{- end }}
+{{- end }}

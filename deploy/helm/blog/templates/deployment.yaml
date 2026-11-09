@@ -1,0 +1,177 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "blog.fullname" . }}
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "blog.webSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Secret 不在 chart 內，改 Secret 後要手動 rollout restart（見 NOTES）
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/fpm-pool: {{ include (print $.Template.BasePath "/fpm-pool-configmap.yaml") . | sha256sum }}
+        {{- if .Values.dbTLS.enabled }}
+        checksum/db-ca: {{ include (print $.Template.BasePath "/db-ca-configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "blog.webSelectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "blog.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "blog.webSelectorLabels" . | nindent 20 }}
+      {{- end }}
+      {{- if .Values.topologySpread.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: {{ .Values.topologySpread.maxSkew }}
+          topologyKey: {{ .Values.topologySpread.topologyKey }}
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "blog.webSelectorLabels" . | nindent 14 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        # php 必須是第一個 container：deploy-k3s 以 containers[0] 的 image 判斷 Pod 是否已換成新版
+        - name: php
+          image: {{ include "blog.image" (dict "root" . "component" "php") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "blog.containerSecurityContext" (dict "root" . "user" .Values.runAs.php.user "group" .Values.runAs.php.group) | nindent 12 }}
+          envFrom:
+            {{- include "blog.envFrom" (dict "root" . "configMapName" (include "blog.fullname" .)) | nindent 12 }}
+          ports:
+            - name: fastcgi
+              containerPort: 9000
+              protocol: TCP
+          startupProbe:
+            tcpSocket:
+              port: fastcgi
+            {{- toYaml .Values.probes.startup | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: fastcgi
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ .Values.preStopSleepSeconds.php }}
+          resources:
+            {{- toYaml .Values.resources.php | nindent 12 }}
+          volumeMounts:
+            - name: fpm-pool
+              mountPath: /usr/local/etc/php-fpm.d/zz-k8s.conf
+              subPath: zz-k8s.conf
+              readOnly: true
+            {{- include "blog.phpWritableMounts" . | nindent 12 }}
+            {{- if .Values.dbTLS.enabled }}
+            {{- include "blog.dbTLSVolumeMount" . | nindent 12 }}
+            {{- end }}
+        - name: nginx
+          image: {{ include "blog.image" (dict "root" . "component" "nginx") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "blog.containerSecurityContext" (dict "root" . "user" .Values.runAs.nginx.user "group" .Values.runAs.nginx.group) | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            {{- toYaml .Values.probes.startup | nindent 12 }}
+          # Ready = nginx → php-fpm → Laravel 都正常（/up 不連 DB、不連 Redis）
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: http
+            {{- toYaml .Values.probes.readiness | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ .Values.preStopSleepSeconds.nginx }}
+          resources:
+            {{- toYaml .Values.resources.nginx | nindent 12 }}
+          volumeMounts:
+            - name: nginx-tmp
+              mountPath: /tmp
+        {{- with .Values.metrics.phpFpmExporter }}
+        {{- if .enabled }}
+        - name: php-fpm-exporter
+          image: {{ .image | quote }}
+          imagePullPolicy: {{ .pullPolicy }}
+          securityContext:
+            {{- include "blog.containerSecurityContext" (dict "root" $ "user" .runAs.user "group" .runAs.group) | nindent 12 }}
+          env:
+            - name: PHP_FPM_SCRAPE_URI
+              value: {{ printf "tcp://127.0.0.1:9000%s" $.Values.php.fpm.statusPath | quote }}
+            - name: PHP_FPM_WEB_LISTEN_ADDRESS
+              value: ":9253"
+          ports:
+            # Alloy 以 port 名稱 fpm-metrics 辨識，不可改名
+            - name: fpm-metrics
+              containerPort: 9253
+              protocol: TCP
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+        {{- end }}
+        {{- end }}
+      volumes:
+        - name: fpm-pool
+          configMap:
+            name: {{ include "blog.fullname" . }}-fpm-pool
+        - name: nginx-tmp
+          emptyDir:
+            sizeLimit: 64Mi
+        {{- include "blog.phpWritableVolumes" . | nindent 8 }}
+        {{- if .Values.dbTLS.enabled }}
+        {{- include "blog.dbTLSVolume" (dict "root" . "suffix" "") | nindent 8 }}
+        {{- end }}
