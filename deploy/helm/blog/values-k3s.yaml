@@ -14,6 +14,10 @@ secret:
 
 # 與 usongrat prod .env 相同的非祕密值（2026-11-09 讀取）；k3s 專屬差異：LOG_CHANNEL=stderr、DB_USERNAME=blog、
 # DB_HOST/REDIS_HOST 由 template 決定、TZ（原本是 compose 的 APP_TIMEZONE）。
+# APP_TIMEZONE：Laravel 應用時區（config/app.php）；TZ 只影響 OS 層。兩者都是 Asia/Taipei。
+# BLOG_TZ_SHIFT_CONFIRMED：只在執行 2026_11_09_000000_shift_timestamps_utc_to_taipei 那一次部署時用
+#   暫時加進 Secret blog-env（migrate hook 的 envFrom 也讀它），或手動 helm 時 --set-string env.BLOG_TZ_SHIFT_CONFIRMED=1；
+#   不要寫進本檔，跑完即移除（見該 migration 的說明）。
 env:
   APP_NAME: Roy
   APP_ENV: production
@@ -47,6 +51,7 @@ env:
   GOOGLE_TAG: GTM-M3QLQXN
   CLOUDFLARE_PURGE_ENABLED: "true"
   TZ: Asia/Taipei
+  APP_TIMEZONE: Asia/Taipei
 
 db:
   host: 10.0.0.66

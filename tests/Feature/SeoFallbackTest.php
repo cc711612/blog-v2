@@ -63,6 +63,6 @@ class SeoFallbackTest extends TestCase
 
         $xml = $this->get('/feed.xml')->assertOk()->getContent();
 
-        $this->assertStringContainsString('<lastBuildDate>Wed, 09 Sep 2026 09:09:09 +0000</lastBuildDate>', $xml);
+        $this->assertStringContainsString('<lastBuildDate>Wed, 09 Sep 2026 09:09:09 +0800</lastBuildDate>', $xml);
     }
 }

@@ -60,12 +60,14 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions. blog 一律以台灣時間
+    | （Asia/Taipei，+08:00）寫入與顯示；DB 內舊 blog 的資料本來就是 +8，
+    | blog-v2 先前以 UTC 寫入的部分（>= CUTOFF_UTC）由
+    | 2026_11_09_000000_shift_timestamps_utc_to_taipei 轉換。
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Taipei'),
 
     /*
     |--------------------------------------------------------------------------
