@@ -80,8 +80,9 @@ dbTLS:
 
 ingress:
   enabled: true
-  # 階段 B（影子驗證）只開 k3s-blog.usongrat.tw；切換 roy.usongrat.tw 前再加入（見 phase2 搬遷步驟 15）
+  # 正式網域 roy.usongrat.tw（2026-11-09 切換）；k3s-blog.usongrat.tw 保留當 Access 保護的測試入口
   hosts:
+    - roy.usongrat.tw
     - k3s-blog.usongrat.tw
   entryPoints:
     - web
