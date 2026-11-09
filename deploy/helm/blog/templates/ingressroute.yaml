@@ -1,0 +1,18 @@
+{{- if .Values.ingress.enabled }}
+{{- $hosts := required "ingress.hosts is required when ingress.enabled" .Values.ingress.hosts }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "blog.fullname" . }}
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    {{- toYaml .Values.ingress.entryPoints | nindent 4 }}
+  routes:
+    - kind: Rule
+      match: {{ $first := true }}{{ range $hosts }}{{ if not $first }} || {{ end }}Host(`{{ . }}`){{ $first = false }}{{ end }}
+      services:
+        - name: {{ include "blog.fullname" . }}
+          port: {{ .Values.service.port }}
+{{- end }}

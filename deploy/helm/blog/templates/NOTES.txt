@@ -1,0 +1,15 @@
+blog {{ .Values.image.tag }} 已部署到 namespace {{ .Release.Namespace }}。
+
+此 chart 不會建立 Secret。請先建立 {{ .Values.secret.existingSecret }}，至少包含：
+  APP_KEY（必須與舊環境相同，否則既有 cookie／加密資料失效）
+  DB_PASSWORD
+  REDIS_PASSWORD
+選用：CLOUDFLARE_ZONE_ID、CLOUDFLARE_API_TOKEN、MAIL_PASSWORD。
+Secret 只能放祕密 key：同名 key 會蓋掉 ConfigMap（例如 DB_HOST）。
+修改 Secret 後不會自動滾動更新，請執行：
+  kubectl -n {{ .Release.Namespace }} rollout restart deploy/{{ include "blog.fullname" . }}{{ if .Values.redis.enabled }} deploy/{{ include "blog.redisName" . }}{{ end }}
+
+驗證：
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "blog.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "blog.fullname" . }} -c php
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "blog.fullname" . }} -c php -- php artisan about --only=environment,drivers

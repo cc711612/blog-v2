@@ -14,7 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // 前面有 Cloudflare → 主機 nginx → 容器 nginx，信任內網 proxy 的 X-Forwarded-For / -Proto，
+        // 前面有 Cloudflare → 主機 nginx → 容器 nginx（usongrat），或 Cloudflare → cloudflared → Traefik → Pod 內 nginx（k3s），
+        // 信任內網 proxy（清單見 ResolveCloudflareClientIp::INTERNAL_PROXIES）的 X-Forwarded-For / -Proto，
         // 讓 url()/route() 產生 https 網址（canonical、og:url、轉址）。
         // ⚠️ 刻意不信任 X-Forwarded-Host / -Port：Laravel 預設會全信，攻擊者可偽造 Host，
         // 把 canonical、og:url 毒化進 Cloudflare 邊緣快取。見 tests/Feature/TrustProxiesTest.php。

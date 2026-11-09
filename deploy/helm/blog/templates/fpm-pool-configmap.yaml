@@ -1,0 +1,18 @@
+# php-fpm pool 覆寫（掛成 zz-k8s.conf，載入順序在 image 內建的 www.conf / zz-docker.conf 之後）
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "blog.fullname" . }}-fpm-pool
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+data:
+  zz-k8s.conf: |
+    [www]
+    pm = dynamic
+    pm.max_children = {{ .Values.php.fpm.maxChildren }}
+    pm.start_servers = {{ .Values.php.fpm.startServers }}
+    pm.min_spare_servers = {{ .Values.php.fpm.minSpareServers }}
+    pm.max_spare_servers = {{ .Values.php.fpm.maxSpareServers }}
+    pm.status_path = {{ .Values.php.fpm.statusPath }}
+    ; 容器內的 env（ConfigMap / Secret）要傳給 worker，Laravel 才讀得到
+    clear_env = no

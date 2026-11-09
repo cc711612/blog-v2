@@ -1,0 +1,118 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy }}
+# web（php-fpm + nginx）與 migrate Job：
+#   進：Traefik → nginx 8080；monitoring namespace（Alloy 抓取與 blackbox /up）→ 8080、fpm-metrics 9253
+#   出：DNS、DB（dbCIDR:dbPort）、叢集內 Redis、Cloudflare 網段 443（Purge API）；其餘全擋
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "blog.fullname" . }}
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "blog.selectorLabels" . | nindent 6 }}
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values: ["web", "migrate"]
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.ingressFrom.traefik.namespace }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $np.ingressFrom.traefik.podLabels | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.ingressFrom.monitoring.namespace }}
+      ports:
+        - protocol: TCP
+          port: 8080
+        {{- if .Values.metrics.phpFpmExporter.enabled }}
+        - protocol: TCP
+          port: 9253
+        {{- end }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.dnsNamespace }}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: {{ $np.dbCIDR }}
+      ports:
+        - protocol: TCP
+          port: {{ $np.dbPort }}
+    {{- if .Values.redis.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "blog.redisSelectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 6379
+    {{- end }}
+    {{- if and $np.egressHTTPS.enabled $np.egressHTTPS.cidrs }}
+    - to:
+        {{- range $np.egressHTTPS.cidrs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+{{- if .Values.redis.enabled }}
+---
+# Redis：只接受同 release 的 web Pod 連 6379、monitoring namespace 抓 redis-metrics 9121；不需要任何對外連線
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "blog.redisName" . }}
+  labels:
+    {{- include "blog.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "blog.redisSelectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "blog.webSelectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 6379
+    {{- if .Values.redis.exporter.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.ingressFrom.monitoring.namespace }}
+      ports:
+        - protocol: TCP
+          port: 9121
+    {{- end }}
+  egress: []
+{{- end }}
+{{- end }}

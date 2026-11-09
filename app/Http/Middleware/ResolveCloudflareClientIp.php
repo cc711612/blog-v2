@@ -8,7 +8,11 @@ use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * 請求鏈是 Cloudflare → 主機 nginx → 容器 nginx → app。Cloudflare 邊緣 IP 不在 TrustProxies 清單，
+ * 請求鏈（兩種部署都支援）：
+ *  - usongrat（docker compose）：Cloudflare → 主機 nginx → 容器 nginx → app，內網 proxy 在 172.16.0.0/12；
+ *  - k3s：Cloudflare → cloudflared（tunnel）→ Traefik → Pod 內 nginx → app，cloudflared／Traefik 在 Pod 網段 10.42.0.0/16
+ *    （REMOTE_ADDR 是 Traefik Pod IP），Service 網段 10.43.0.0/16。
+ * Cloudflare 邊緣 IP 不在 TrustProxies 清單，
  * 所以 request()->ip() 會是 Cloudflare 邊緣 IP，依 IP 的限流會變成「每個 CF 節點共用一個額度」。
  *
  * 這裡只在「確實經過 Cloudflare」時才採信 CF-Connecting-IP，否則任何人直連 origin 都能偽造 IP：
@@ -20,8 +24,12 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ResolveCloudflareClientIp
 {
-    /** 與 bootstrap/app.php 的 trustProxies 共用：本機與 docker 內網 */
-    public const INTERNAL_PROXIES = ['127.0.0.1', '::1', '172.16.0.0/12'];
+    /**
+     * 與 bootstrap/app.php 的 trustProxies 共用：本機、docker 內網（usongrat），以及 k3s 的 Pod／Service 網段
+     * （k3s 預設 cluster-cidr 10.42.0.0/16、service-cidr 10.43.0.0/16）。
+     * 只能放「外部連不進來」的網段：k3s 的 Traefik 是 ClusterIP，唯一入口是 cloudflared tunnel。
+     */
+    public const INTERNAL_PROXIES = ['127.0.0.1', '::1', '172.16.0.0/12', '10.42.0.0/16', '10.43.0.0/16'];
 
     public function handle(Request $request, Closure $next): Response
     {

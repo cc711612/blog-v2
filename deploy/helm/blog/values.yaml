@@ -1,0 +1,282 @@
+# blog chart 預設值（不含任何祕密）。環境專屬值請另放 values-<env>.yaml。
+# 由 k8s-lab charts/blog 改寫成 notify chart 的風格：existingSecret、image tag 必填、dbTLS、
+# IngressRoute、NetworkPolicy、PDB、securityContext；不再內建 MySQL（正式環境用 usongrat shared-mysql）。
+
+image:
+  # 同一個 commit 產生兩個 image（Dockerfile 的 php / nginx target），共用 tag。
+  php:
+    repository: ghcr.io/example/blog-v2-php
+  nginx:
+    repository: ghcr.io/example/blog-v2-nginx
+  # 必填：完整 commit SHA。留空會讓 helm 直接失敗，不提供 latest 預設。
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# private registry 的 pull secret（名稱）；chart 只引用，不建立。
+imagePullSecrets: []
+#  - name: registry-pull
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+
+# 非祕密環境變數，寫入 ConfigMap。DB_HOST、REDIS_HOST、MYSQL_ATTR_SSL_CA 由 template 決定（見 db / redis / dbTLS），
+# 寫在這裡會被忽略。祕密（APP_KEY、DB_PASSWORD、REDIS_PASSWORD、CLOUDFLARE_*、MAIL_PASSWORD）只放 existingSecret。
+# 注意：envFrom 的順序是 ConfigMap 在前、Secret 在後，同名 key 以 Secret 為準，所以 Secret 只能放祕密 key。
+env:
+  APP_NAME: blog
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://blog.example.com
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: info
+  DB_CONNECTION: mysql
+  DB_PORT: "3306"
+  DB_DATABASE: blog
+  DB_USERNAME: blog
+  SESSION_DRIVER: redis
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: database
+  REDIS_CLIENT: phpredis
+  REDIS_PORT: "6379"
+  MAIL_MAILER: log
+  FILESYSTEM_DISK: local
+  BROADCAST_CONNECTION: log
+  CLOUDFLARE_PURGE_ENABLED: "false"
+
+# 資料庫主機
+db:
+  host: 127.0.0.1
+
+secret:
+  # 必填：既有 Secret 的名稱，chart 不會建立或產生任何 Secret。
+  # 必要 key：APP_KEY、DB_PASSWORD、REDIS_PASSWORD（redis.enabled 時 redis 也讀這個 key）
+  # 選用 key：CLOUDFLARE_ZONE_ID、CLOUDFLARE_API_TOKEN、MAIL_PASSWORD
+  existingSecret: ""
+
+# MySQL TLS。預設關閉（PDO 不帶 SSL 選項 = 明文）。
+# 開啟後 CA 檔掛載到 Pod，並設定 MYSQL_ATTR_SSL_CA（Deployment 與 migrate 都會套用，config/database.php 已支援）。
+# ⚠️ 與 notify（Go，可以只驗 CA = VERIFY_CA）不同：PHP mysqlnd 的 verify_peer 與 verify_peer_name 綁在一起，
+# 設了 SSL_CA 就「同時」驗證 CA 與主機名稱，PDO 沒有選項可以只驗 CA。MySQL 自動產生的伺服器憑證沒有 SAN、
+# CN 是 MySQL_Server_<ver>_Auto_Generated_Server_Certificate，用 IP 連一定失敗（2026-11-09 以 mysql:8.0 + php 8.2.35 實測）；
+# 用 hostAliases 把 CN 指到 IP 也不行（CN 含底線，不是合法的 RFC 1123 名稱，API server 拒收）。
+# 因此：
+#   verifyServerCert: true   驗證 CA + 主機名稱（等同 VERIFY_IDENTITY）；憑證必須含 db.host 的 IP SAN（或 DNS SAN）。
+#   verifyServerCert: false  只加密、不驗證伺服器憑證（等同 REQUIRED / notify 舊的 tls=skip-verify），設定 MYSQL_ATTR_SSL_VERIFY_SERVER_CERT=false。
+dbTLS:
+  enabled: false
+  # CA 憑證（PEM，公開資料，不是祕密）。chart 會建立 ConfigMap 存放；與 existingConfigMap 擇一。
+  caCert: ""
+  # 或引用既有 ConfigMap 的名稱（chart 不建立）；key 由 caKey 指定。
+  existingConfigMap: ""
+  caKey: ca.pem
+  verifyServerCert: true
+  mountPath: /etc/blog/db-ca
+
+service:
+  type: ClusterIP
+  port: 80
+
+# php-fpm pool 覆寫（掛成 /usr/local/etc/php-fpm.d/zz-k8s.conf，載入順序在 image 內建的 www.conf / zz-docker.conf 之後）。
+# 每個 worker 約 30–40 MB，調高時要一起看 resources.php.limits.memory（5 × 40 = 200 MB < 256Mi）。
+php:
+  fpm:
+    maxChildren: 5
+    startServers: 2
+    minSpareServers: 1
+    maxSpareServers: 3
+    # php-fpm status page（只經 FastCGI 讀，nginx 不轉送：非 .php 路徑會落到 Laravel 回 404）；給 exporter 用
+    statusPath: /fpm-status
+
+# 監控 sidecar。Alloy 以 container port 名稱辨識抓取目標，名稱與 port 不可改（告警／dashboard 依賴）：
+#   web Pod   ：fpm-metrics:9253（php-fpm exporter，讀 tcp://127.0.0.1:9000<statusPath>）
+#   redis Pod ：redis-metrics:9121（redis_exporter，見 redis.exporter）
+metrics:
+  phpFpmExporter:
+    enabled: true
+    image: hipages/php-fpm_exporter:2.2.0
+    pullPolicy: IfNotPresent
+    # image 沒有指定 USER（預設 root），restricted 要求非 root
+    runAs:
+      user: 65534
+      group: 65534
+    resources:
+      requests:
+        cpu: 5m
+        memory: 16Mi
+      limits:
+        memory: 64Mi
+
+podAnnotations: {}
+podLabels: {}
+
+terminationGracePeriodSeconds: 30
+# nginx 先等 Traefik 拿掉 endpoint；php 再多等一點，確保 nginx 送出的最後一批請求處理完
+preStopSleepSeconds:
+  nginx: 5
+  php: 10
+
+# 基線（usongrat 7 天）：php 尖峰 working set 約 89 MiB、CPU 平均 6m；nginx 3.7 MiB。不設 CPU limit（避免限流）。
+resources:
+  php:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  nginx:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
+
+securityContext:
+  runAsNonRoot: true
+  # emptyDir（storage/*）以 www-data 群組可寫
+  fsGroup: 82
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# 各 container 的執行身分（與 image 內的使用者一致）
+runAs:
+  php:
+    user: 82     # www-data
+    group: 82
+  nginx:
+    user: 101    # nginx
+    group: 101
+
+probes:
+  # nginx 經 FastCGI 打 Laravel 內建 /up（php 與 nginx 都要正常才 Ready；不連 DB）
+  startup:
+    periodSeconds: 2
+    failureThreshold: 30
+  readiness:
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+  liveness:
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# 使用 preferred，單一節點也能排程。
+affinity:
+  enabled: true
+topologySpread:
+  enabled: true
+  topologyKey: kubernetes.io/hostname
+  maxSkew: 1
+
+nodeSelector: {}
+tolerations: []
+
+# Traefik IngressRoute（CRD traefik.io/v1alpha1）。hosts 任一符合即轉送到 Service。
+ingress:
+  enabled: true
+  hosts:
+    - blog.example.com
+  entryPoints:
+    - web
+
+# 套用前執行 `php artisan migrate --force`（Helm hook）。migration 必須向後相容（舊版 Pod 仍在服務）。
+migrate:
+  enabled: true
+  # 容器失敗會在同一個 Pod 內重啟（見 migrate-job.yaml 的 restartPolicy），此值限制總重試次數。
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+
+serviceAccount:
+  name: ""
+
+# 叢集內 Redis（session / cache / rate limit；資料可丟）。密碼取自 existingSecret 的 REDIS_PASSWORD。
+redis:
+  enabled: true
+  # redis.enabled=false 時改用外部 Redis 主機
+  externalHost: ""
+  image: redis:7.4.12-alpine3.21
+  pullPolicy: IfNotPresent
+  # 只是快取／session：預設不開 AOF，只留 RDB 快照讓重啟後 session 大致還在
+  appendonly: false
+  save: "300 10"
+  maxmemory: 96mb
+  maxmemoryPolicy: allkeys-lru
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 256Mi
+  runAs:
+    user: 999    # redis（alpine image）
+    group: 1000
+  # redis_exporter sidecar（與 usongrat mon-redis-exporter 同版）；port 名稱 redis-metrics:9121 不可改
+  exporter:
+    enabled: true
+    image: oliver006/redis_exporter:v1.92.1
+    pullPolicy: IfNotPresent
+    runAs:
+      user: 59000   # image 內建 USER 59000:59000
+      group: 59000
+    resources:
+      requests:
+        cpu: 5m
+        memory: 16Mi
+      limits:
+        memory: 64Mi
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+networkPolicy:
+  enabled: false
+  dbCIDR: 10.0.0.10/32
+  dbPort: 3306
+  ingressFrom:
+    traefik:
+      namespace: kube-system
+      podLabels:
+        app.kubernetes.io/name: traefik
+    # Alloy（metrics 抓取與 blackbox 探測 Service blog:80/up → Pod 8080）在這個 namespace，非 hostNetwork
+    monitoring:
+      namespace: monitoring
+  dnsNamespace: kube-system
+  # 對外 HTTPS：只到 Cloudflare（Purge API api.cloudflare.com 在 Cloudflare 網段內）。
+  # 範圍同 config/cloudflare.php（https://www.cloudflare.com/ips-v4），官方調整時兩邊一起更新。
+  egressHTTPS:
+    enabled: true
+    cidrs:
+      - 173.245.48.0/20
+      - 103.21.244.0/22
+      - 103.22.200.0/22
+      - 103.31.4.0/22
+      - 141.101.64.0/18
+      - 108.162.192.0/18
+      - 190.93.240.0/20
+      - 188.114.96.0/20
+      - 197.234.240.0/22
+      - 198.41.128.0/17
+      - 162.158.0.0/15
+      - 104.16.0.0/13
+      - 104.24.0.0/14
+      - 172.64.0.0/13
+      - 131.0.72.0/22
