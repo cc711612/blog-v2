@@ -107,8 +107,9 @@ class SeoMetaTest extends TestCase
 
         $post = $blocks[0];
         $this->assertSame('Laravel 佇列實戰', $post['headline']);
-        $this->assertSame('2026-01-02T03:04:05+00:00', $post['datePublished']);
-        $this->assertSame('2026-02-03T04:05:06+00:00', $post['dateModified']);
+        // app 時區 Asia/Taipei：DB 牆鐘以 +08:00 輸出
+        $this->assertSame('2026-01-02T03:04:05+08:00', $post['datePublished']);
+        $this->assertSame('2026-02-03T04:05:06+08:00', $post['dateModified']);
         $this->assertSame('zh-Hant', $post['inLanguage']);
         $this->assertSame('Roy', $post['author']['name']);
         $this->assertSame(self::BASE.'/', $post['author']['url']);
@@ -120,8 +121,8 @@ class SeoMetaTest extends TestCase
         $this->assertSame([1, 2, 3], array_column($items, 'position'));
         $this->assertSame('Laravel 佇列實戰', $items[2]['name']);
 
-        $this->assertStringContainsString('<meta property="article:published_time" content="2026-01-02T03:04:05+00:00">', $html);
-        $this->assertStringContainsString('<meta property="article:modified_time" content="2026-02-03T04:05:06+00:00">', $html);
+        $this->assertStringContainsString('<meta property="article:published_time" content="2026-01-02T03:04:05+08:00">', $html);
+        $this->assertStringContainsString('<meta property="article:modified_time" content="2026-02-03T04:05:06+08:00">', $html);
         $this->assertStringContainsString('<meta property="og:image" content="'.self::BASE.'/images/og-default.png">', $html);
         $this->assertStringContainsString('<meta name="twitter:image" content="'.self::BASE.'/images/og-default.png">', $html);
         $this->assertStringContainsString('<meta property="og:image:width" content="1200">', $html);
@@ -181,7 +182,7 @@ class SeoMetaTest extends TestCase
         $this->assertSame(self::BASE.'/article/90/post-90', (string) $first->link);
         $this->assertSame((string) $first->link, (string) $first->guid);
         $this->assertSame('true', (string) $first->guid['isPermaLink']);
-        $this->assertSame('Fri, 02 Jan 2026 03:04:05 +0000', (string) $first->pubDate);
+        $this->assertSame('Fri, 02 Jan 2026 03:04:05 +0800', (string) $first->pubDate);
         $this->assertSame('自訂摘要', (string) $first->description);
         $this->assertSame('內文 92', (string) $xml->channel->item[0]->description);
     }
