@@ -12,7 +12,7 @@ imagePullSecrets:
 secret:
   existingSecret: blog-env
 
-# 與 usongrat prod .env 相同的非祕密值（2026-11-09 讀取）；k3s 專屬差異：LOG_CHANNEL=stderr、DB_USERNAME=blog、
+# 與 usongrat prod .env 相同的非祕密值（2026-11-09 讀取）；k3s 專屬差異：LOG_CHANNEL=stderr、LOG_LEVEL=info（2026-11-10，減少 Loki 寫入）、DB_USERNAME=blog、
 # DB_HOST/REDIS_HOST 由 template 決定、TZ（原本是 compose 的 APP_TIMEZONE）。
 # APP_TIMEZONE：Laravel 應用時區（config/app.php）；TZ 只影響 OS 層。兩者都是 Asia/Taipei。
 # BLOG_TZ_SHIFT_CONFIRMED：只在執行 2026_11_09_000000_shift_timestamps_utc_to_taipei 那一次部署時用
@@ -29,7 +29,7 @@ env:
   APP_MAINTENANCE_DRIVER: file
   BCRYPT_ROUNDS: "12"
   LOG_CHANNEL: stderr
-  LOG_LEVEL: debug
+  LOG_LEVEL: info
   DB_CONNECTION: mysql
   DB_PORT: "3306"
   DB_DATABASE: blog
