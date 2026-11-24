@@ -62,7 +62,7 @@ EXPOSE 9000
 CMD ["php-fpm"]
 
 # ---------- nginx：靜態檔 + 反向代理到同 Pod 的 php-fpm ----------
-FROM nginx:1.30.6-alpine3.24 AS nginx
+FROM nginx:1.30.7-alpine3.24 AS nginx
 # 官方 entrypoint 的 envsubst / IPv6 腳本會改寫 /etc/nginx/conf.d，唯讀 root fs 下不需要；直接用自己的設定
 RUN rm -f /docker-entrypoint.d/*.sh /etc/nginx/conf.d/default.conf
 COPY deployment/k3s/nginx/nginx.conf /etc/nginx/nginx.conf
