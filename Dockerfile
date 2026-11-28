@@ -29,7 +29,7 @@ RUN rm -rf tests deploy deployment docs tools .env .env.* Dockerfile Jenkinsfile
     && composer dump-autoload --no-dev --optimize --classmap-authoritative --no-scripts
 
 # ---------- php：php-fpm runtime ----------
-FROM php:8.2.35-fpm-alpine3.24 AS php
+FROM php:8.4.28-fpm-alpine3.24 AS php
 
 # 擴充與 deployment/local-blog/php/Dockerfile 相同（mbstring、pdo、opcache 已內建於 base image，不重複編譯）。
 # 執行期只留共享函式庫；編譯工具裝在 .build-deps，裝完即移除
